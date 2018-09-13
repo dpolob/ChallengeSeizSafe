@@ -66,3 +66,13 @@ def calcularestadisticos(datos):
 
 def calcularentropia(datos):
     return(st.entropy(datos))
+
+def devolverpaciente(archivo):
+    if 'BCN' in archivo:
+        return (1)
+    elif 'ZGZ' in archivo:
+        return (2)
+    elif 'POZ' in archivo:
+        return (3)
+    else:
+        return (4) #GET
