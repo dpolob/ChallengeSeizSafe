@@ -22,6 +22,8 @@ version = '3.0'
 freq = 400
 cwd = getcwd()
 inCsv = 4 # 4 lee el modulo, 3 lee eje Z
+primeraVez = True
+
 
 
 #inVar = np.array([0,1,3,4,5,7])
@@ -37,28 +39,27 @@ training, sensibilidad, valorar = (False, False, False)
 for opt, arg in options:
     if opt in ('-e', '--entrenar'):
         training = True
-        ruta = arg
+        normalizedPath = path.abspath(arg)
     elif opt in ('-s', '--sensibilidad'):
         sensibilidad = True
-        ruta = arg
+        normalizedPath = path.abspath(arg)
     elif opt in ('-v','--valorar'):
         valorar = True
-        archivoSalida = arg
+        archivoSalida = path.abspath(arg)
     elif opt in ('-m','--modelo'):
-        rutaModelo = arg
+        rutaModelo = path.abspath(arg)
     elif opt == '--version':
         print(version)
         exit(0)
     else:
        exit(2)
 
-normalizedPath = path.abspath(ruta)
-rutaModelo = path.abspath(rutaModelo)
-archivoSalida = parh.abspath(archivoSalida)
 
-pdb.set_trace()
 
 if training:    
+    variables = None
+    salidas = None
+
     listaArchivos = listdir(normalizedPath)
     
     #Por cada archivo leer el contenido del csv
@@ -87,6 +88,8 @@ if training:
         elif 'MOV' in archivo: # Si es un movimiento solo se procesa una ventana si 6000<long<24000
             if (longitudDatos < 24000 & longitudDatos > 6000):
                 datos = datos[0 : 2499]
+            else:
+                continue
 
 
         #calcular datos de inicio y fin de las ventanas
@@ -123,7 +126,8 @@ if training:
             variableLocal[j, 8], variableLocal[j, 9], variableLocal[j, 10] = funciones.calcularestadisticos(datosTrabajo)
             variableLocal[j, 11] = funciones.calcularentropia(datosTrabajo)
         
-        if listaArchivos.index(archivo) == 0: #es la primera vez y variables y salida debe ser inicializado
+        pdb.set_trace()
+        if variables is None: #es la primera vez y variables y salida debe ser inicializado
             variables = variableLocal
             salidas = salidaLocal
         else:
