@@ -178,7 +178,9 @@ if training:
     
 if sensibilidad:
     listaArchivos = listdir(normalizedPath)
-    
+    variables = None
+    salidas = None
+
     #Por cada archivo leer el contenido del csv
     for archivo in listaArchivos:
         print(archivo + "\n")
@@ -237,7 +239,7 @@ if sensibilidad:
             variableLocal[j, 11] = funciones.calcularentropia(datosTrabajo)
             variableLocal[j, 12] = funciones.devolverpaciente(archivo)
         
-        if listaArchivos.index(archivo) == 0: #es la primera vez y variables y salida debe ser inicializado
+        if variables is None: #es la primera vez y variables y salida debe ser inicializado
             variables = variableLocal
             salidas = salidaLocal
         else:
@@ -249,7 +251,13 @@ if sensibilidad:
     from sklearn.preprocessing import StandardScaler
     import pickle
 
-   # bestModel = {'SVM': clf.best_estimator_ , 'SCALER': scaler}
+    pickle.load(diccionario, open(rutaModelo, 'rb'))
+    modelo = diccionario['SVM']
+    scaler = diccionario['SCALER']
+
+
+    modelo, scaler = # bestModel = {'SVM': clf.best_estimator_ , 'SCALER': scaler
+
    # svm, scaler = pickle.read(open(rutaModelo, "rb").read()
    #         pickle.dump(bestModel, open(rutaModelo, "wb" ))
    #         pickle.dump(bestModel, open(rutaModelo, "wb" ))
