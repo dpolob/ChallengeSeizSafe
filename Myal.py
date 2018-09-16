@@ -350,31 +350,5 @@ if sensibilidad:
     modelo = diccionario['SVM']
     scaler = diccionario['SCALER']
 
-
- 
-
-   # svm, scaler = pickle.read(open(rutaModelo, "rb").read()
-   #         pickle.dump(bestModel, open(rutaModelo, "wb" ))
-   #         pickle.dump(bestModel, open(rutaModelo, "wb" ))
-   # scaler = StandardScaler().fit(variables[:,:])
-   #Para 
- 
-
-
-
-
-        
-
-
-
-
-
-   
-
 elif valorar:
     print()
-    
-    
-
-
-    
