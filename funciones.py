@@ -69,10 +69,10 @@ def calcularentropia(datos):
 
 def devolverpaciente(archivo):
     if 'BCN' in archivo:
-        return (1)
+        return (0)
     elif 'ZGZ' in archivo:
-        return (2)
+        return (0.33)
     elif 'POZ' in archivo:
-        return (3)
+        return (0.66)
     else:
-        return (4) #GET
+        return (1) #GET
