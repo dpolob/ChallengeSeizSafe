@@ -32,7 +32,7 @@ rutaPickle = None
 print("Frecuencia: {}\n".format(freq))
 print("CWD       : {}\n".format(cwd))
 
-options, remainder = getopt.getopt(sys.argv[1:], 'e:s:v:m:p:', ['version', 'entrenar=', 'sensibilidad=', 'valorar=', 'modelo=', 'pickle='])
+options, remainder = getopt.getopt(sys.argv[1:], 'e:s:v:p:', ['version', 'entrenar=', 'sensibilidad=', 'valorar=', 'pickle='])
 training, sensibilidad, valorar, modoPickle = (False, False, False, False) 
 
 #Leer linea de comandos del programa
@@ -46,8 +46,6 @@ for opt, arg in options:
     elif opt in ('-v','--valorar'):
         valorar = True
         archivoSalida = path.abspath(arg)
-    elif opt in ('-m','--modelo'):
-        rutaModelo = path.abspath(arg)
     elif opt in ('-p', '--pickle'):
         rutaPickle = path.abspath(arg)
         modoPickle = True
@@ -78,24 +76,37 @@ if training:
             datos, longitudDatos = funciones.leerarchivocsv(path.abspath(path.join(normalizedPathEntrenar , archivo)), inCsv)
 
             #Comprobar longitud de los archivos
-            if 'ATQ' in archivo: #Si es un ataque entonces se procesa entero
-                if longitudDatos == 15 * freq:
-                    numeroVentanas = 6
-                elif longitudDatos > 15 * freq:
-                    numeroVentanas = 6
-                    datos = datos[0 : (15 * freq)] #ojo que es [ : )
-                    longitudDatos = int(15 * freq)
-                elif longitudDatos < 15 * freq:
-                    numeroVentanas = int(longitudDatos // (2.5 * freq))
-                    longitudDatos = int(2.5 * numeroVentanas * freq)
-                    datos = datos[0 : longitudDatos]
-            elif 'MOV' in archivo: # Si es un movimiento solo se procesa una ventana si 6000<long<24000
-                if (longitudDatos < 24000 and longitudDatos > 6000):
-                    numeroVentanas = 1
-                    datos = datos[0 : int(2.5 * freq)]
-                    longitudDatos = datos.shape[0]
-                else:
-                    continue
+            if longitudDatos == 15 * freq:
+                numeroVentanas = 6
+            elif longitudDatos > 15 * freq:
+                numeroVentanas = 6
+                datos = datos[0 : (15 * freq)] #ojo que es [ : )
+                longitudDatos = int(15 * freq)
+            elif longitudDatos < 15 * freq:
+                numeroVentanas = int(longitudDatos // (2.5 * freq))
+                longitudDatos = int(2.5 * numeroVentanas * freq)
+                datos = datos[0 : longitudDatos]
+            
+            #Comprobar longitud de los archivos
+            #if 'ATQ' in archivo: #Si es un ataque entonces se procesa entero
+                #if longitudDatos == 15 * freq:
+                    #numeroVentanas = 6
+                #elif longitudDatos > 15 * freq:
+                    #numeroVentanas = 6
+                    #datos = datos[0 : (15 * freq)] #ojo que es [ : )
+                    #longitudDatos = int(15 * freq)
+                #elif longitudDatos < 15 * freq:
+                    #numeroVentanas = int(longitudDatos // (2.5 * freq))
+                    #longitudDatos = int(2.5 * numeroVentanas * freq)
+                    #datos = datos[0 : longitudDatos]
+            #elif 'MOV' in archivo: # Si es un movimiento solo se procesa una ventana si 6000<long<24000
+                #if (longitudDatos < 24000 and longitudDatos > 6000):
+                    #numeroVentanas = 1
+                    #datos = datos[0 : int(2.5 * freq)]
+                    #longitudDatos = datos.shape[0]
+                #else:
+                    #continue
+
 
 
             #calcular datos de inicio y fin de las ventanas
@@ -105,7 +116,7 @@ if training:
             #rehacer datos con la ventana hamming
             datos = datos * hammingWindow
             #inicializo la ventana a ceros
-            variableLocal = np.zeros((numeroVentanas, 13))
+            variableLocal = np.zeros((numeroVentanas, 12))
         
             if "ATQ" in archivo:
                 salidaLocal = np.ones(numeroVentanas, dtype=int)
@@ -128,7 +139,7 @@ if training:
                 variableLocal[j, 4], variableLocal[j, 5], variableLocal[j, 6], variableLocal[j, 7]  = funciones.calcularfftyee(datosTrabajo, freq)
                 variableLocal[j, 8], variableLocal[j, 9], variableLocal[j, 10] = funciones.calcularestadisticos(datosTrabajo)
                 variableLocal[j, 11] = funciones.calcularentropia(datosTrabajo)
-                variableLocal[j, 12] = funciones.devolverpaciente(archivo)
+                #variableLocal[j, 12] = funciones.devolverpaciente(archivo)
 
             if variables is None: #es la primera vez y variables y salida debe ser inicializado
                 variables = variableLocal
@@ -176,8 +187,8 @@ if training:
     from sklearn import svm
     from sklearn.model_selection import GridSearchCV
     parameters = {'kernel':('rbf', 'sigmoid', 'poly'), 'C':[0.01, 0.1, 1, 10, 100, 1000]}
-    svc = svm.SVC(verbose=True)
-    clf = GridSearchCV(svc, parameters, verbose=True)
+    svc = svm.SVC()
+    clf = GridSearchCV(svc, parameters)
     clf.fit(variables, salidas)
     
     #Una vez entranado calculamos como saldría el resultado con el dataset de sensibilidad
@@ -213,7 +224,7 @@ if training:
         #rehacer datos con la ventana hamming
         datos = datos * hammingWindow
         #inicializo la ventana a ceros
-        variableLocal = np.zeros((numeroVentanas, 13))
+        variableLocal = np.zeros((numeroVentanas, 12))
         
         if "ATQ" in archivo:
             salidaLocal = np.ones(numeroVentanas, dtype=int)
@@ -235,7 +246,7 @@ if training:
             variableLocal[j, 4], variableLocal[j, 5], variableLocal[j, 6], variableLocal[j, 7]  = funciones.calcularfftyee(datosTrabajo, freq)
             variableLocal[j, 8], variableLocal[j, 9], variableLocal[j, 10] = funciones.calcularestadisticos(datosTrabajo)
             variableLocal[j, 11] = funciones.calcularentropia(datosTrabajo)
-            variableLocal[j, 12] = funciones.devolverpaciente(archivo)
+            #variableLocal[j, 12] = funciones.devolverpaciente(archivo)
 
             if variables is None: #es la primera vez y variables y salida debe ser inicializado
                 variables = variableLocal
@@ -264,11 +275,9 @@ if training:
 
     if respuestaUsuario == 'y':
         #Serializar
-        pickle.dump(bestModel, open(rutaModelo, "wb" ))
-        print("Estimador guardado en el archivo: {}\n".format(rutaModelo))
-        
-
-
+        pathGuardarModelo = path.abspath(input("Ruta del modelo"))
+        pickle.dump(bestModel, open(pathGuardarModelo, "wb" ))
+        print("Estimador guardado en el archivo: {}\n".format(pathGuardarModelo))
 
     
 if sensibilidad:
@@ -309,7 +318,7 @@ if sensibilidad:
         datos = datos * hammingWindow
 
         #inicializo la ventana a ceros
-        variableLocal = np.zeros((numeroVentanas, 13))
+        variableLocal = np.zeros((numeroVentanas, 12))
         
         if "ATQ" in archivo:
             salidaLocal = np.ones(numeroVentanas, dtype=int)
@@ -332,7 +341,7 @@ if sensibilidad:
             variableLocal[j, 4], variableLocal[j, 5], variableLocal[j, 6], variableLocal[j, 7]  = funciones.calcularfftyee(datosTrabajo, freq)
             variableLocal[j, 8], variableLocal[j, 9], variableLocal[j, 10] = funciones.calcularestadisticos(datosTrabajo)
             variableLocal[j, 11] = funciones.calcularentropia(datosTrabajo)
-            variableLocal[j, 12] = funciones.devolverpaciente(archivo)
+            #variableLocal[j, 12] = funciones.devolverpaciente(archivo)
         
         if variables is None: #es la primera vez y variables y salida debe ser inicializado
             variables = variableLocal
