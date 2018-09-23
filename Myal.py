@@ -139,7 +139,7 @@ if training:
                 variableLocal[j, 4], variableLocal[j, 5], variableLocal[j, 6], variableLocal[j, 7]  = funciones.calcularfftyee(datosTrabajo, freq)
                 variableLocal[j, 8], variableLocal[j, 9], variableLocal[j, 10] = funciones.calcularestadisticos(datosTrabajo)
                 variableLocal[j, 11] = funciones.calcularentropia(datosTrabajo)
-                #variableLocal[j, 12] = funciones.devolverpaciente(archivo)
+                variableLocal[j, 12] = funciones.devolverpaciente(archivo)
 
             if variables is None: #es la primera vez y variables y salida debe ser inicializado
                 variables = variableLocal
@@ -178,19 +178,37 @@ if training:
     #ENTRENAMOS UN MODELO SVM con CV con gridsearch
 #    from sklearn.model_selection import train_test_split
 #    X_train, X_test, y_train, y_test = train_test_split(variables[:,:], salidas, test_size=0.50, random_state=42, shuffle=True)
-        
+    
     from sklearn.preprocessing import StandardScaler
-    scaler = StandardScaler().fit(variables[:,:])
+    from sklearn import svm
+    from sklearn.model_selection import GridSearchCV
+    #Haremos 4 SVM uno por cada ataque
+    variableCombinada = np.concatenate((variables, salidas.reshape(len(salidas),1)), axis=1)
+    modelos = dict()
+
+    for k in range(1, 5):
+        variableCombinadaModeloK = variableCombinada[ variableCombinada[:, 12] == k ]
+        entradaModeloK = variableCombinadaModeloK[:, :-2]
+        salidaModeloK = variableCombinadaModeloK[:, -1]
+        scalerK = StandardScaler.fit(entradaModeloK[:,:])
+        parametersK = {'kernel':('rbf', 'sigmoid', 'poly'), 'C':[0.01, 0.1, 1, 10, 100, 1000]}
+        svcK = svm.SVC()
+        clfK = GridSearchCV(svcK, parametersK)
+        clfK.fit(entradaModeloK, salidaModeloK)
+        modelos["SCALER" + str(k)] = scalerK
+        modelos["SVC" + str(k)] = svcK
+
 #    X_train = scaler.transform(X_train)
 #    X_test = scaler.transform(X_test)
         
-    from sklearn import svm
-    from sklearn.model_selection import GridSearchCV
-    parameters = {'kernel':('rbf', 'sigmoid', 'poly'), 'C':[0.01, 0.1, 1, 10, 100, 1000]}
-    svc = svm.SVC()
-    clf = GridSearchCV(svc, parameters)
-    clf.fit(variables, salidas)
-    
+#    parameters = {'kernel':('rbf', 'sigmoid', 'poly'), 'C':[0.01, 0.1, 1, 10, 100, 1000]}
+#    svc = svm.SVC()
+#    clf = GridSearchCV(svc, parameters)
+#    clf.fit(variables, salidas)
+    print ("------------------------------------------------------\n")
+    print ("Ya he entrenado {} modelos".format(k))
+    tirar = input("Pulse una tecla para evaluar...\n")
+
     #Una vez entranado calculamos como saldría el resultado con el dataset de sensibilidad
     listaArchivosSensibilidad = listdir(normalizedPathSensibilidad)
     variables = None
@@ -230,6 +248,7 @@ if training:
             salidaLocal = np.ones(numeroVentanas, dtype=int)
         else:
             salidaLocal = np.zeros(numeroVentanas, dtype=int)
+        
         for j in range(numeroVentanas):
             inicio = int(ventanas[j,0])
             fin = int(ventanas[j,1])
@@ -246,7 +265,7 @@ if training:
             variableLocal[j, 4], variableLocal[j, 5], variableLocal[j, 6], variableLocal[j, 7]  = funciones.calcularfftyee(datosTrabajo, freq)
             variableLocal[j, 8], variableLocal[j, 9], variableLocal[j, 10] = funciones.calcularestadisticos(datosTrabajo)
             variableLocal[j, 11] = funciones.calcularentropia(datosTrabajo)
-            #variableLocal[j, 12] = funciones.devolverpaciente(archivo)
+            variableLocal[j, 12] = funciones.devolverpaciente(archivo)
 
             if variables is None: #es la primera vez y variables y salida debe ser inicializado
                 variables = variableLocal
@@ -254,29 +273,33 @@ if training:
             else:
                 variables = np.vstack((variables, variableLocal))
                 salidas = np.append(salidas, salidaLocal)
-    #Aqui ya tengo las variables en variables y salidas ya sea por pick o analisis
     print ("------------------------------------------------------\n")
-    print ("Ya he leido todos los datos, con las condiciones impuestas\n")
+    print ("Ya he leido todos los datos\n")
     print (" * Numero de ataques: {}\n".format(sum(x for x in salidas if x==1)))
     print (" * Numero de movimientos: {}\n".format(salidas.shape[0] - sum(x for x in salidas if x==1)))
-    tirar = input("Pulse una tecla para entrenar...\n")
+    tirar = input("Pulse una tecla para predecir...\n")
 
-    prediccion = clf.predict(variables)
     from sklearn.metrics import accuracy_score
-    print("-------------------------------------------------\n")
-    print("RESULTADO DEL ESTIMADOR: {}\n".format(accuracy_score(salidas, prediccion)))
-        
-    bestModel = {'SVM': clf.best_estimator_ , 'SCALER': scaler}
+    variableCombinada = np.concatenate((variables, salidas.reshape(len(salidas),1)), axis=1)
+    for k in range(1,5):
+        variableCombinadaModeloK = variableCombinada[ variableCombinada[:, 12] == k ]
+        entradaModeloK = variableCombinadaModeloK[:, :-2]
+        salidaModeloK = variableCombinadaModeloK[:, -1]
+        scalerK = modelos["SCALER" + str(k)]
+        scalerK.transform(entradaModeloK[:,:])
+        clfK = modelos["SVC" + str(k)]
+        prediccionK = clf.predict(entradaModeloK)
+        print("-------------------------------------------------\n")
+        print("RESULTADO DEL ESTIMADOR: {}\n".format(accuracy_score(salidasModeloK, prediccionK)))
         
     while True:
-        respuestaUsuario = input("Desea guardar el estimador? (y/n)\n")
+        respuestaUsuario = input("Desea guardar los estimadores? (y/n)\n")
         if (respuestaUsuario == 'y' or respuestaUsuario == 'n'):
             break
 
     if respuestaUsuario == 'y':
-        #Serializar
         pathGuardarModelo = path.abspath(input("Ruta del modelo"))
-        pickle.dump(bestModel, open(pathGuardarModelo, "wb" ))
+        pickle.dump(modelos, open(pathGuardarModelo, "wb" ))
         print("Estimador guardado en el archivo: {}\n".format(pathGuardarModelo))
 
     
