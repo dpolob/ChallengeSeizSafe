@@ -218,7 +218,7 @@ if training:
     tirar = input("Pulse una tecla para evaluar...")
 
     #Una vez entranado calculamos como saldría el resultado con el dataset de sensibilidad
-    if modoPickleS == False
+    if modoPickleS == False:
         listaArchivosSensibilidad = listdir(normalizedPathSensibilidad)
         variables = None
         salidas = None
@@ -283,11 +283,10 @@ if training:
                     variables = np.vstack((variables, variableLocal))
                     salidas = np.append(salidas, salidaLocal)
          
-         while True:
+        while True:
             respuestaUsuario = input("Desea guardar los resultados de las variables/salidas de sensibilidad? (y/n)")
             if (respuestaUsuario == 'y' or respuestaUsuario == 'n'):
                 break
-
         if respuestaUsuario == 'y':
            if rutaPickleS is None:
                rutaPickleS = path.abspath(path.join(getcwd(),"sensibilidad.pickle"))
@@ -333,6 +332,7 @@ if training:
 
     
 if sensibilidad:
+    print()
 #    listaArchivos = listdir(normalizedPath)
 #    variables = None
 #    salidas = None
