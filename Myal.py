@@ -65,7 +65,6 @@ if training:
         listaArchivos = listdir(normalizedPathEntrenar)
     
         #Por cada archivo leer el contenido del csv
-        pdb.set_trace()
         for archivo in listaArchivos:
             print(archivo + "\n")
         
@@ -116,7 +115,7 @@ if training:
             #rehacer datos con la ventana hamming
             datos = datos * hammingWindow
             #inicializo la ventana a ceros
-            variableLocal = np.zeros((numeroVentanas, 12))
+            variableLocal = np.zeros((numeroVentanas, 13))
         
             if "ATQ" in archivo:
                 salidaLocal = np.ones(numeroVentanas, dtype=int)
@@ -167,36 +166,41 @@ if training:
         salidas = diccionario['SALIDAS']
     
     #Aqui ya tengo las variables en variables y salidas ya sea por pick o analisis
-   
     print ("------------------------------------------------------\n")
     print ("Ya he leido todos los datos, con las condiciones impuestas\n")
     print (" * Numero de ataques: {}\n".format(sum(x for x in salidas if x==1)))
     print (" * Numero de movimientos: {}\n".format(salidas.shape[0] - sum(x for x in salidas if x==1)))
     tirar = input("Pulse una tecla para entrenar...\n")
 
-        
     #ENTRENAMOS UN MODELO SVM con CV con gridsearch
-#    from sklearn.model_selection import train_test_split
-#    X_train, X_test, y_train, y_test = train_test_split(variables[:,:], salidas, test_size=0.50, random_state=42, shuffle=True)
+    #    from sklearn.model_selection import train_test_split
+    #    X_train, X_test, y_train, y_test = train_test_split(variables[:,:], salidas, test_size=0.50, random_state=42, shuffle=True)
     
     from sklearn.preprocessing import StandardScaler
     from sklearn import svm
     from sklearn.model_selection import GridSearchCV
     #Haremos 4 SVM uno por cada ataque
     variableCombinada = np.concatenate((variables, salidas.reshape(len(salidas),1)), axis=1)
+    print(variableCombinada)
+    tirar = input("Pulse una tecla para entrenar...\n")
     modelos = dict()
 
     for k in range(1, 5):
         variableCombinadaModeloK = variableCombinada[ variableCombinada[:, 12] == k ]
         entradaModeloK = variableCombinadaModeloK[:, :-2]
+        print("Ciclo: {}".format(k))
+        print("Shape EntradaModeloK: {}".format(entradaModeloK.shape))
         salidaModeloK = variableCombinadaModeloK[:, -1]
-        scalerK = StandardScaler.fit(entradaModeloK[:,:])
-        parametersK = {'kernel':('rbf', 'sigmoid', 'poly'), 'C':[0.01, 0.1, 1, 10, 100, 1000]}
+        print("Shape SalidaModeloK: {}".format(salidaModeloK.shape))
+        print("Numero de ataques: {}".format(sum(salidaModeloK[salidaModeloK == 1])))
+        scalerK = StandardScaler().fit(entradaModeloK)
+        entradaModeloK = scalerK.transform(entradaModeloK)
+        parametersK = {'kernel':('rbf', 'sigmoid', 'poly'), 'C':[0.01, 0.1, 1, 10, 100, 1000, 10000]}
         svcK = svm.SVC()
         clfK = GridSearchCV(svcK, parametersK)
         clfK.fit(entradaModeloK, salidaModeloK)
         modelos["SCALER" + str(k)] = scalerK
-        modelos["SVC" + str(k)] = svcK
+        modelos["SVC" + str(k)] = clfK.best_estimator_
 
 #    X_train = scaler.transform(X_train)
 #    X_test = scaler.transform(X_test)
@@ -217,10 +221,10 @@ if training:
         print(archivo + "\n")
         
         #SI NO ES ARCHIVO SALTO
-        if path.isfile(path.join(normalizedPath, archivo)) == False:
+        if path.isfile(path.join(normalizedPathSensibilidad, archivo)) == False:
             continue
        
-        datos, longitudDatos = funciones.leerarchivocsv(path.abspath(path.join(normalizedPath , archivo)), inCsv)
+        datos, longitudDatos = funciones.leerarchivocsv(path.abspath(path.join(normalizedPathSensibilidad , archivo)), inCsv)
 
         #Comprobar longitud de los archivos
         
@@ -242,7 +246,7 @@ if training:
         #rehacer datos con la ventana hamming
         datos = datos * hammingWindow
         #inicializo la ventana a ceros
-        variableLocal = np.zeros((numeroVentanas, 12))
+        variableLocal = np.zeros((numeroVentanas, 13))
         
         if "ATQ" in archivo:
             salidaLocal = np.ones(numeroVentanas, dtype=int)
@@ -287,10 +291,12 @@ if training:
         salidaModeloK = variableCombinadaModeloK[:, -1]
         scalerK = modelos["SCALER" + str(k)]
         scalerK.transform(entradaModeloK[:,:])
+        print(modelos["SVC" + str(k)])
+        tirar = input("tecla")
         clfK = modelos["SVC" + str(k)]
-        prediccionK = clf.predict(entradaModeloK)
+        prediccionK = clfK.predict(entradaModeloK)
         print("-------------------------------------------------\n")
-        print("RESULTADO DEL ESTIMADOR: {}\n".format(accuracy_score(salidasModeloK, prediccionK)))
+        print("RESULTADO DEL ESTIMADOR {}: {}\n".format(k, accuracy_score(salidasModeloK, prediccionK)))
         
     while True:
         respuestaUsuario = input("Desea guardar los estimadores? (y/n)\n")
