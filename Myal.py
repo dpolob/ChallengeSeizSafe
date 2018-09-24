@@ -24,6 +24,7 @@ cwd = getcwd()
 inCsv = 4 # 4 lee el modulo, 3 lee eje Z
 primeraVez = True
 rutaPickle = None
+rutaPickleS = None
 
 
 #inVar = np.array([0,1,3,4,5,7])
@@ -32,8 +33,8 @@ rutaPickle = None
 print("Frecuencia: {}\n".format(freq))
 print("CWD       : {}\n".format(cwd))
 
-options, remainder = getopt.getopt(sys.argv[1:], 'e:s:v:p:', ['version', 'entrenar=', 'sensibilidad=', 'valorar=', 'pickle='])
-training, sensibilidad, valorar, modoPickle = (False, False, False, False) 
+options, remainder = getopt.getopt(sys.argv[1:], 'e:s:v:p:ps', ['version', 'entrenar=', 'sensibilidad=', 'valorar=', 'pickle=', 'pickles='])
+training, sensibilidad, valorar, modoPickle, modoPickleS = (False, False, False, False, False) 
 
 #Leer linea de comandos del programa
 for opt, arg in options:
@@ -49,6 +50,9 @@ for opt, arg in options:
     elif opt in ('-p', '--pickle'):
         rutaPickle = path.abspath(arg)
         modoPickle = True
+    elif opt in ('-ps', '--pickles'):
+        rutaPickleS = path.abspath(arg)
+        modoPickleS = True
     elif opt == '--version':
         print(version)
         exit(0)
@@ -209,100 +213,119 @@ if training:
 #    svc = svm.SVC()
 #    clf = GridSearchCV(svc, parameters)
 #    clf.fit(variables, salidas)
-    print ("------------------------------------------------------\n")
+    print ("------------------------------------------------------")
     print ("Ya he entrenado {} modelos".format(k))
-    tirar = input("Pulse una tecla para evaluar...\n")
+    tirar = input("Pulse una tecla para evaluar...")
 
     #Una vez entranado calculamos como saldría el resultado con el dataset de sensibilidad
-    listaArchivosSensibilidad = listdir(normalizedPathSensibilidad)
-    variables = None
-    salidas = None
-    for archivo in listaArchivosSensibilidad:
-        print(archivo + "\n")
-        
-        #SI NO ES ARCHIVO SALTO
-        if path.isfile(path.join(normalizedPathSensibilidad, archivo)) == False:
-            continue
-       
-        datos, longitudDatos = funciones.leerarchivocsv(path.abspath(path.join(normalizedPathSensibilidad , archivo)), inCsv)
+    if modoPickleS == False
+        listaArchivosSensibilidad = listdir(normalizedPathSensibilidad)
+        variables = None
+        salidas = None
+        for archivo in listaArchivosSensibilidad:
+            print(archivo + "\n")
+            
+            #SI NO ES ARCHIVO SALTO
+            if path.isfile(path.join(normalizedPathSensibilidad, archivo)) == False:
+                continue
+           
+            datos, longitudDatos = funciones.leerarchivocsv(path.abspath(path.join(normalizedPathSensibilidad , archivo)), inCsv)
 
-        #Comprobar longitud de los archivos
-        
-        if longitudDatos == 15 * freq:
-            numeroVentanas = 6
-        elif longitudDatos > 15 * freq:
-            numeroVentanas = 6
-            datos = datos[0 : (15 * freq)] #ojo que es [ : )
-            longitudDatos = int(15 * freq)
-        elif longitudDatos < 15 * freq:
-            numeroVentanas = int(longitudDatos // (2.5 * freq))
-            longitudDatos = int(2.5 * numeroVentanas * freq)
-            datos = datos[0 : longitudDatos]
-       
-        #calcular datos de inicio y fin de las ventanas
-        ventanas = funciones.calcularventana(numeroVentanas, freq)
-        #calcular ventana hamming para filtrado de extremos
-        hammingWindow = funciones.hamming(longitudDatos, freq)
-        #rehacer datos con la ventana hamming
-        datos = datos * hammingWindow
-        #inicializo la ventana a ceros
-        variableLocal = np.zeros((numeroVentanas, 13))
-        
-        if "ATQ" in archivo:
-            salidaLocal = np.ones(numeroVentanas, dtype=int)
-        else:
-            salidaLocal = np.zeros(numeroVentanas, dtype=int)
-        
-        for j in range(numeroVentanas):
-            inicio = int(ventanas[j,0])
-            fin = int(ventanas[j,1])
-            datosTrabajo = datos[inicio : fin + 1]
-        
-                #0 -> Energia,         #1 -> RMS,         #2 -> Vpp,         #3 -> ACF
-                #4 -> FFT025,         #5 -> FFT25100,         #6 -> FFT100200
-                #7 -> EE, 8-> kur 9-> skew , 10 -> var, 11 -> entropia
-               
-            variableLocal[j, 0] = funciones.calcularenergia(datosTrabajo)
-            variableLocal[j, 1] = funciones.calcularRMS(datosTrabajo)
-            variableLocal[j, 2] = funciones.calcularVpp(datosTrabajo)
-            variableLocal[j, 3] = funciones.autocorr(datosTrabajo)
-            variableLocal[j, 4], variableLocal[j, 5], variableLocal[j, 6], variableLocal[j, 7]  = funciones.calcularfftyee(datosTrabajo, freq)
-            variableLocal[j, 8], variableLocal[j, 9], variableLocal[j, 10] = funciones.calcularestadisticos(datosTrabajo)
-            variableLocal[j, 11] = funciones.calcularentropia(datosTrabajo)
-            variableLocal[j, 12] = funciones.devolverpaciente(archivo)
-
-            if variables is None: #es la primera vez y variables y salida debe ser inicializado
-                variables = variableLocal
-                salidas = salidaLocal
+            #Comprobar longitud de los archivos
+            
+            if longitudDatos == 15 * freq:
+                numeroVentanas = 6
+            elif longitudDatos > 15 * freq:
+                numeroVentanas = 6
+                datos = datos[0 : (15 * freq)] #ojo que es [ : )
+                longitudDatos = int(15 * freq)
+            elif longitudDatos < 15 * freq:
+                numeroVentanas = int(longitudDatos // (2.5 * freq))
+                longitudDatos = int(2.5 * numeroVentanas * freq)
+                datos = datos[0 : longitudDatos]
+           
+            #calcular datos de inicio y fin de las ventanas
+            ventanas = funciones.calcularventana(numeroVentanas, freq)
+            #calcular ventana hamming para filtrado de extremos
+            hammingWindow = funciones.hamming(longitudDatos, freq)
+            #rehacer datos con la ventana hamming
+            datos = datos * hammingWindow
+            #inicializo la ventana a ceros
+            variableLocal = np.zeros((numeroVentanas, 13))
+            
+            if "ATQ" in archivo:
+                salidaLocal = np.ones(numeroVentanas, dtype=int)
             else:
-                variables = np.vstack((variables, variableLocal))
-                salidas = np.append(salidas, salidaLocal)
-    print ("------------------------------------------------------\n")
-    print ("Ya he leido todos los datos\n")
-    print (" * Numero de ataques: {}\n".format(sum(x for x in salidas if x==1)))
-    print (" * Numero de movimientos: {}\n".format(salidas.shape[0] - sum(x for x in salidas if x==1)))
-    tirar = input("Pulse una tecla para predecir...\n")
+                salidaLocal = np.zeros(numeroVentanas, dtype=int)
+            
+            for j in range(numeroVentanas):
+                inicio = int(ventanas[j,0])
+                fin = int(ventanas[j,1])
+                datosTrabajo = datos[inicio : fin + 1]
+            
+                    #0 -> Energia,         #1 -> RMS,         #2 -> Vpp,         #3 -> ACF
+                    #4 -> FFT025,         #5 -> FFT25100,         #6 -> FFT100200
+                    #7 -> EE, 8-> kur 9-> skew , 10 -> var, 11 -> entropia
+                   
+                variableLocal[j, 0] = funciones.calcularenergia(datosTrabajo)
+                variableLocal[j, 1] = funciones.calcularRMS(datosTrabajo)
+                variableLocal[j, 2] = funciones.calcularVpp(datosTrabajo)
+                variableLocal[j, 3] = funciones.autocorr(datosTrabajo)
+                variableLocal[j, 4], variableLocal[j, 5], variableLocal[j, 6], variableLocal[j, 7]  = funciones.calcularfftyee(datosTrabajo, freq)
+                variableLocal[j, 8], variableLocal[j, 9], variableLocal[j, 10] = funciones.calcularestadisticos(datosTrabajo)
+                variableLocal[j, 11] = funciones.calcularentropia(datosTrabajo)
+                variableLocal[j, 12] = funciones.devolverpaciente(archivo)
+
+                if variables is None: #es la primera vez y variables y salida debe ser inicializado
+                    variables = variableLocal
+                    salidas = salidaLocal
+                else:
+                    variables = np.vstack((variables, variableLocal))
+                    salidas = np.append(salidas, salidaLocal)
+         
+         while True:
+            respuestaUsuario = input("Desea guardar los resultados de las variables/salidas de sensibilidad? (y/n)")
+            if (respuestaUsuario == 'y' or respuestaUsuario == 'n'):
+                break
+
+        if respuestaUsuario == 'y':
+           if rutaPickleS is None:
+               rutaPickleS = path.abspath(path.join(getcwd(),"sensibilidad.pickle"))
+           diccionario = {'VARIABLES' : variables, 'SALIDAS' : salidas}        
+           pickle.dump(diccionario, open(rutaPickleS, "wb" ))
+           print("Variables guardadas en el archivo: {}\n".format(rutaPickleS))
+
+    elif modoPickleS == True:
+        diccionario = pickle.load(open(rutaPickleS, 'rb'))
+        variables = diccionario['VARIABLES']
+        salidas = diccionario['SALIDAS']
+    
+    print ("------------------------------------------------------")
+    print ("Ya he leido todos los datos")
+    print (" * Numero de ataques: {}".format(sum(x for x in salidas if x==1)))
+    print (" * Numero de movimientos: {}".format(salidas.shape[0] - sum(x for x in salidas if x==1)))
+    tirar = input("Pulse una tecla para predecir...")
 
     from sklearn.metrics import accuracy_score
     variableCombinada = np.concatenate((variables, salidas.reshape(len(salidas),1)), axis=1)
-    for k in range(1,5):
+    for k in range(1, 5):
+        print("Prediccion con modelo {}".format(k))
         variableCombinadaModeloK = variableCombinada[ variableCombinada[:, 12] == k ]
         entradaModeloK = variableCombinadaModeloK[:, :-2]
+        print("Shape entradaModelo: {}".format(entradaModeloK.shape))
         salidaModeloK = variableCombinadaModeloK[:, -1]
+        print("Shape salidaModelo: {}".format(salidaModeloK.shape))
         scalerK = modelos["SCALER" + str(k)]
         scalerK.transform(entradaModeloK[:,:])
-        print(modelos["SVC" + str(k)])
-        tirar = input("tecla")
         clfK = modelos["SVC" + str(k)]
         prediccionK = clfK.predict(entradaModeloK)
         print("-------------------------------------------------\n")
-        print("RESULTADO DEL ESTIMADOR {}: {}\n".format(k, accuracy_score(salidasModeloK, prediccionK)))
+        print("RESULTADO DEL ESTIMADOR {}: {}\n".format(k, accuracy_score(salidaModeloK, prediccionK)))
         
     while True:
         respuestaUsuario = input("Desea guardar los estimadores? (y/n)\n")
         if (respuestaUsuario == 'y' or respuestaUsuario == 'n'):
             break
-
     if respuestaUsuario == 'y':
         pathGuardarModelo = path.abspath(input("Ruta del modelo"))
         pickle.dump(modelos, open(pathGuardarModelo, "wb" ))
@@ -310,83 +333,83 @@ if training:
 
     
 if sensibilidad:
-    listaArchivos = listdir(normalizedPath)
-    variables = None
-    salidas = None
+#    listaArchivos = listdir(normalizedPath)
+#    variables = None
+#    salidas = None
 
     #Por cada archivo leer el contenido del csv
-    for archivo in listaArchivos:
-        print(archivo + "\n")
+#    for archivo in listaArchivos:
+#        print(archivo + "\n")
         
         #SI NO ES ARCHIVO SALTO
-        if path.isfile(path.join(normalizedPath, archivo)) == False:
-            continue
+#        if path.isfile(path.join(normalizedPath, archivo)) == False:
+#            continue
           
-        datos, longitudDatos = funciones.leerarchivocsv(path.abspath(path.join(normalizedPath , archivo)), inCsv)
+#        datos, longitudDatos = funciones.leerarchivocsv(path.abspath(path.join(normalizedPath , archivo)), inCsv)
         
         #Comprobar longitud de los archivos
-        if longitudDatos == 15 * freq:
-            numeroVentanas = 6
-        elif longitudDatos > 15 * freq:
-            numeroVentanas = 6
-            datos = datos[0 : (15 * freq)] #ojo que es [ : )
-            longitudDatos = int(15 * freq)
-        elif longitudDatos < 15 * freq:
-            numeroVentanas = int(longitudDatos // (2.5 * freq))
-            longitudDatos = int(2.5 * numeroVentanas * freq)
-            datos = datos[0 : longitudDatos]
-       
-      
-        #calcular datos de inicio y fin de las ventanas
-        ventanas = funciones.calcularventana(numeroVentanas, freq)
-        
-        #calcular ventana hamming para filtrado de extremos
-        hammingWindow = funciones.hamming(longitudDatos, freq)
-        
-        #rehacer datos con la ventana hamming
-        datos = datos * hammingWindow
-
-        #inicializo la ventana a ceros
-        variableLocal = np.zeros((numeroVentanas, 12))
-        
-        if "ATQ" in archivo:
-            salidaLocal = np.ones(numeroVentanas, dtype=int)
-        else:
-            salidaLocal = np.zeros(numeroVentanas, dtype=int)
-          
-        for j in range(numeroVentanas):
-            inicio = int(ventanas[j,0])
-            fin = int(ventanas[j,1])
-            datosTrabajo = datos[inicio : fin + 1]
-            
-            #0 -> Energia,         #1 -> RMS,         #2 -> Vpp,         #3 -> ACF
-            #4 -> FFT025,         #5 -> FFT25100,         #6 -> FFT100200
-            #7 -> EE, 8-> kur 9-> skew , 10 -> var, 11 -> entropia
-                   
-            variableLocal[j, 0] = funciones.calcularenergia(datosTrabajo)
-            variableLocal[j, 1] = funciones.calcularRMS(datosTrabajo)
-            variableLocal[j, 2] = funciones.calcularVpp(datosTrabajo)
-            variableLocal[j, 3] = funciones.autocorr(datosTrabajo)
-            variableLocal[j, 4], variableLocal[j, 5], variableLocal[j, 6], variableLocal[j, 7]  = funciones.calcularfftyee(datosTrabajo, freq)
-            variableLocal[j, 8], variableLocal[j, 9], variableLocal[j, 10] = funciones.calcularestadisticos(datosTrabajo)
-            variableLocal[j, 11] = funciones.calcularentropia(datosTrabajo)
-            #variableLocal[j, 12] = funciones.devolverpaciente(archivo)
-        
-        if variables is None: #es la primera vez y variables y salida debe ser inicializado
-            variables = variableLocal
-            salidas = salidaLocal
-        else:
-            variables = np.vstack((variables, variableLocal))
-            salidas = np.append(salidas, salidaLocal)
-     
-    #Cargar estimador y scaler
-    from sklearn import svm
-    from sklearn.preprocessing import StandardScaler
-    import pickle
-
-    pickle.load(diccionario, open(rutaModelo, 'rb'))
-    modelo = diccionario['SVM']
-    scaler = diccionario['SCALER']
+#        if longitudDatos == 15 * freq:
+#            numeroVentanas = 6
+#        elif longitudDatos > 15 * freq:
+#            numeroVentanas = 6
+#            datos = datos[0 : (15 * freq)] #ojo que es [ : )
+#            longitudDatos = int(15 * freq)
+#        elif longitudDatos < 15 * freq:
+#            numeroVentanas = int(longitudDatos // (2.5 * freq))
+#            longitudDatos = int(2.5 * numeroVentanas * freq)
+#            datos = datos[0 : longitudDatos]
+#       
+#      
+#        #calcular datos de inicio y fin de las ventanas
+#        ventanas = funciones.calcularventana(numeroVentanas, freq)
+#        
+#        #calcular ventana hamming para filtrado de extremos
+#        hammingWindow = funciones.hamming(longitudDatos, freq)
+#        
+#        #rehacer datos con la ventana hamming
+#        datos = datos * hammingWindow
+#
+#        #inicializo la ventana a ceros
+#        variableLocal = np.zeros((numeroVentanas, 12))
+#        
+#        if "ATQ" in archivo:
+#            salidaLocal = np.ones(numeroVentanas, dtype=int)
+#        else:
+#            salidaLocal = np.zeros(numeroVentanas, dtype=int)
+#          
+#        for j in range(numeroVentanas):
+#            inicio = int(ventanas[j,0])
+#            fin = int(ventanas[j,1])
+#            datosTrabajo = datos[inicio : fin + 1]
+#            
+#            #0 -> Energia,         #1 -> RMS,         #2 -> Vpp,         #3 -> ACF
+#            #4 -> FFT025,         #5 -> FFT25100,         #6 -> FFT100200
+#            #7 -> EE, 8-> kur 9-> skew , 10 -> var, 11 -> entropia
+#                   
+#            variableLocal[j, 0] = funciones.calcularenergia(datosTrabajo)
+#            variableLocal[j, 1] = funciones.calcularRMS(datosTrabajo)
+#            variableLocal[j, 2] = funciones.calcularVpp(datosTrabajo)
+#            variableLocal[j, 3] = funciones.autocorr(datosTrabajo)
+#            variableLocal[j, 4], variableLocal[j, 5], variableLocal[j, 6], variableLocal[j, 7]  = funciones.calcularfftyee(datosTrabajo, freq)
+#            variableLocal[j, 8], variableLocal[j, 9], variableLocal[j, 10] = funciones.calcularestadisticos(datosTrabajo)
+#            variableLocal[j, 11] = funciones.calcularentropia(datosTrabajo)
+#            #variableLocal[j, 12] = funciones.devolverpaciente(archivo)
+#        
+#        if variables is None: #es la primera vez y variables y salida debe ser inicializado
+#            variables = variableLocal
+#            salidas = salidaLocal
+#        else:
+#            variables = np.vstack((variables, variableLocal))
+#            salidas = np.append(salidas, salidaLocal)
+#     
+#    #Cargar estimador y scaler
+#    from sklearn import svm
+#    from sklearn.preprocessing import StandardScaler
+#    import pickle
+#
+#    pickle.load(diccionario, open(rutaModelo, 'rb'))
+#    modelo = diccionario['SVM']
+#    scaler = diccionario['SCALER']
 
 elif valorar:
     print()
