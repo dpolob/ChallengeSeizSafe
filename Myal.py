@@ -70,7 +70,7 @@ if training:
     
         #Por cada archivo leer el contenido del csv
         for archivo in listaArchivos:
-            print(archivo + "\n")
+            print(archivo)
         
             #SI NO ES ARCHIVO SALTO
             if path.isfile(path.join(normalizedPathEntrenar, archivo)) == False:
@@ -162,7 +162,7 @@ if training:
                rutaPickle = path.abspath(path.join(getcwd(),"variables.pickle"))
            diccionario = {'VARIABLES' : variables, 'SALIDAS' : salidas}        
            pickle.dump(diccionario, open(rutaPickle, "wb" ))
-           print("Variables guardadas en el archivo: {}\n".format(rutaPickle))
+           print("Variables guardadas en el archivo: {}".format(rutaPickle))
 
     elif modoPickle == True:
         diccionario = pickle.load(open(rutaPickle, 'rb'))
@@ -170,10 +170,10 @@ if training:
         salidas = diccionario['SALIDAS']
     
     #Aqui ya tengo las variables en variables y salidas ya sea por pick o analisis
-    print ("------------------------------------------------------\n")
-    print ("Ya he leido todos los datos, con las condiciones impuestas\n")
-    print (" * Numero de ataques: {}\n".format(sum(x for x in salidas if x==1)))
-    print (" * Numero de movimientos: {}\n".format(salidas.shape[0] - sum(x for x in salidas if x==1)))
+    print ("------------------------------------------------------")
+    print ("Ya he leido todos los datos, con las condiciones impuestas")
+    print (" * Numero de ataques: {}".format(sum(x for x in salidas if x==1)))
+    print (" * Numero de movimientos: {}".format(salidas.shape[0] - sum(x for x in salidas if x==1)))
     tirar = input("Pulse una tecla para entrenar...\n")
 
     #ENTRENAMOS UN MODELO SVM con CV con gridsearch
@@ -185,8 +185,6 @@ if training:
     from sklearn.model_selection import GridSearchCV
     #Haremos 4 SVM uno por cada ataque
     variableCombinada = np.concatenate((variables, salidas.reshape(len(salidas),1)), axis=1)
-    print(variableCombinada)
-    tirar = input("Pulse una tecla para entrenar...\n")
     modelos = dict()
 
     for k in range(1, 5):
