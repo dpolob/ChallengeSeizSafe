@@ -76,3 +76,7 @@ def devolverpaciente(archivo):
         return (3)
     else:
         return (4) #GET
+
+def DevolverUbicacion(numero):
+    dic = {1:"BCN" , 2:"ZGZ", 3:"POZ", 4:"GET"}
+    return (dic[numero])

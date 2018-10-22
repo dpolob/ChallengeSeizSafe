@@ -174,7 +174,7 @@ if training:
     print ("Ya he leido todos los datos, con las condiciones impuestas")
     print (" * Numero de ataques: {}".format(sum(x for x in salidas if x==1)))
     print (" * Numero de movimientos: {}".format(salidas.shape[0] - sum(x for x in salidas if x==1)))
-    tirar = input("Pulse una tecla para entrenar...\n")
+    _ = input("Pulse una tecla para entrenar...\n")
 
     #ENTRENAMOS UN MODELO SVM con CV con gridsearch
     #    from sklearn.model_selection import train_test_split
@@ -190,7 +190,7 @@ if training:
     for k in range(1, 5):
         variableCombinadaModeloK = variableCombinada[ variableCombinada[:, 12] == k ]
         entradaModeloK = variableCombinadaModeloK[:, :-2]
-        print("Ciclo: {}".format(k))
+        print("Ciclo: {}".format(funciones.DevolverUbicacion(k)))
         print("Shape EntradaModeloK: {}".format(entradaModeloK.shape))
         salidaModeloK = variableCombinadaModeloK[:, -1]
         print("Shape SalidaModeloK: {}".format(salidaModeloK.shape))
@@ -213,7 +213,7 @@ if training:
 #    clf.fit(variables, salidas)
     print ("------------------------------------------------------")
     print ("Ya he entrenado {} modelos".format(k))
-    tirar = input("Pulse una tecla para evaluar...")
+    _ = input("Pulse una tecla para evaluar...")
 
     #Una vez entranado calculamos como saldría el resultado con el dataset de sensibilidad
     if modoPickleS == False:
@@ -221,7 +221,7 @@ if training:
         variables = None
         salidas = None
         for archivo in listaArchivosSensibilidad:
-            print(archivo + "\n")
+            print(archivo)
             
             #SI NO ES ARCHIVO SALTO
             if path.isfile(path.join(normalizedPathSensibilidad, archivo)) == False:
@@ -290,7 +290,7 @@ if training:
                rutaPickleS = path.abspath(path.join(getcwd(),"sensibilidad.pickle"))
            diccionario = {'VARIABLES' : variables, 'SALIDAS' : salidas}        
            pickle.dump(diccionario, open(rutaPickleS, "wb" ))
-           print("Variables guardadas en el archivo: {}\n".format(rutaPickleS))
+           print("Variables guardadas en el archivo: {}".format(rutaPickleS))
 
     elif modoPickleS == True:
         diccionario = pickle.load(open(rutaPickleS, 'rb'))
@@ -301,12 +301,12 @@ if training:
     print ("Ya he leido todos los datos")
     print (" * Numero de ataques: {}".format(sum(x for x in salidas if x==1)))
     print (" * Numero de movimientos: {}".format(salidas.shape[0] - sum(x for x in salidas if x==1)))
-    tirar = input("Pulse una tecla para predecir...")
+    _ = input("Pulse una tecla para predecir...")
 
     from sklearn.metrics import accuracy_score
     variableCombinada = np.concatenate((variables, salidas.reshape(len(salidas),1)), axis=1)
     for k in range(1, 5):
-        print("Prediccion con modelo {}".format(k))
+        print("Prediccion con modelo {}".format(funcion.DevolverUbicacion(k)))
         variableCombinadaModeloK = variableCombinada[ variableCombinada[:, 12] == k ]
         entradaModeloK = variableCombinadaModeloK[:, :-2]
         print("Shape entradaModelo: {}".format(entradaModeloK.shape))
@@ -316,24 +316,23 @@ if training:
         scalerK.transform(entradaModeloK[:,:])
         clfK = modelos["SVC" + str(k)]
         prediccionK = clfK.predict(entradaModeloK)
-        print("-------------------------------------------------\n")
-        print("RESULTADO DEL ESTIMADOR {}: {}\n".format(k, accuracy_score(salidaModeloK, prediccionK)))
+        print("-------------------------------------------------")
+        print("RESULTADO DEL ESTIMADOR {}: {}".format(k, accuracy_score(salidaModeloK, prediccionK)))
         
     while True:
-        respuestaUsuario = input("Desea guardar los estimadores? (y/n)\n")
+        respuestaUsuario = input("Desea guardar los estimadores? (y/n)")
         if (respuestaUsuario == 'y' or respuestaUsuario == 'n'):
             break
     if respuestaUsuario == 'y':
         pathGuardarModelo = path.abspath(input("Ruta del modelo"))
         pickle.dump(modelos, open(pathGuardarModelo, "wb" ))
-        print("Estimador guardado en el archivo: {}\n".format(pathGuardarModelo))
+        print("Estimador guardado en el archivo: {}".format(pathGuardarModelo))
 
     
 if sensibilidad:
-    print()
-#    listaArchivos = listdir(normalizedPath)
-#    variables = None
-#    salidas = None
+    listaArchivos = listdir(normalizedPathSensibilidad)
+    variables = None
+    salidas = None
 
     #Por cada archivo leer el contenido del csv
 #    for archivo in listaArchivos:
