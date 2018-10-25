@@ -80,3 +80,10 @@ def devolverpaciente(archivo):
 def DevolverUbicacion(numero):
     dic = {1:"BCN" , 2:"ZGZ", 3:"POZ", 4:"GET"}
     return (dic[numero])
+
+def CalcularResultado(pred, real):
+    n = pred[(pred==1) & (real==1)].shape[0]
+    m = pred[(pred==0) & (real==0)].shape[0]
+    N = real[real==1].shape[0]
+    M = real.shape[0] - N
+    return(55 * (n / N) + 42.5 * (m / M)) 
