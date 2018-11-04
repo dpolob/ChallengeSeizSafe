@@ -22,6 +22,7 @@ version = '3.0'
 freq = 400
 cwd = getcwd()
 inCsv = 4 # 4 lee el modulo, 3 lee eje Z
+num_pacientes = 4
 primeraVez = True
 rutaPickleE = None
 rutaPickleS = None
@@ -68,7 +69,7 @@ for opt, arg in options:
 
 if entrenar:
     #Comprobar si las variables de entrada estan bien
-    if any((rutaE, rutaS)):
+    if not any((rutaE, rutaS)):
         print("Las variables introducidas no son correctas")
         print("rutaE: {}".format(rutaE))
         print("rutaS: {}".format(rutaS))
@@ -88,16 +89,21 @@ if entrenar:
        
             datos, longitudDatos = funciones.leerarchivocsv(path.abspath(path.join(rutaE , archivo)), inCsv)
             #Comprobar longitud de los archivos
-            if longitudDatos == 15 * freq:
-                numeroVentanas = 6
-            elif longitudDatos > 15 * freq:
-                numeroVentanas = 6
-                datos = datos[0 : (15 * freq)] #ojo que es [ : )
-                longitudDatos = int(15 * freq)
-            elif longitudDatos < 15 * freq:
-                numeroVentanas = int(longitudDatos // (2.5 * freq))
-                longitudDatos = int(2.5 * numeroVentanas * freq)
-                datos = datos[0 : longitudDatos]
+            if 'ATQ' in archivo:
+                if longitudDatos == 15 * freq:
+                    numeroVentanas = 6
+                elif longitudDatos > 15 * freq:
+                    numeroVentanas = 6
+                    datos = datos[0 : (15 * freq)] #ojo que es [ : )
+                    longitudDatos = int(15 * freq)
+                elif longitudDatos < 15 * freq:
+                    numeroVentanas = int(longitudDatos // (2.5 * freq))
+                    longitudDatos = int(2.5 * numeroVentanas * freq)
+                    datos = datos[0 : longitudDatos]
+            else:
+                    numeroVentanas = 1
+                    longitudDatos = 400
+                    datos = datos[0 : longitudDatos]
             
             ventanas = funciones.calcularventana(numeroVentanas, freq)
             #calcular ventana hamming para filtrado de extremos
@@ -322,8 +328,6 @@ if sensibilidad:
         
     listaArchivos = listdir(rutaS) #Cargar archivos
     modelos =  pickle.load(open(rutaPickleM, 'rb'))     #Cargar modelos
-    print(modelos.keys())
-    _=input() 
     var_sensibilidad = None
     sal_sensibilidad = None
     diccionario_archivo = {}
@@ -369,25 +373,29 @@ if sensibilidad:
             variableLocal[j, 11] = funciones.calcularentropia(datosTrabajo)
         #Seleccion del modelo SVM entrenado
         scaler_sensibilidad = modelos["SCALER" + str(paciente)]
-        clf_sensibiliad = modelos["SVC" + str(paciente)]
+        clf_sensibilidad = modelos["SVC" + str(paciente)]
         scaler_sensibilidad.transform(variableLocal[:,:])
         prediccion_sensibilidad = clf_sensibilidad.predict(variableLocal)
-        
         salida_sensibilidad = (0, 1)['ATQ' in archivo]
         #Montar la variable de salida
         if var_sensibilidad is None:
-                                                        
             var_sensibilidad = np.concatenate(([idx_archivo], [paciente], prediccion_sensibilidad, [salida_sensibilidad]), axis=0)
+            print(var_sensibilidad)
         else:
             var_sensibilidad = np.vstack((var_sensibilidad, np.concatenate(([idx_archivo], [paciente], prediccion_sensibilidad, [salida_sensibilidad]), axis=0)))
+            print(var_sensibilidad[-1,:])
+        
     
     print("____________________________")
     print("Shape de variable var_sensibilidad: {}".format(var_sensibilidad.shape))
+    print("Numero de archivos ataques {}".format(np.sum(var_sensibilidad[:,-1])))
     #Ya tenemos montado la variable var_sensibilidad
-    for paciente in range(num_pacientes):
+    for paciente in range(1, num_pacientes+1):
         print("Iteracion para paciente {}".format(funciones.DevolverUbicacion(paciente)))
         var_usar = var_sensibilidad[var_sensibilidad[:,1] == paciente]
         print("   Shape de la matriz a usar {}".format(var_usar.shape))
+        print("   Numero de ataques {}".format(np.sum(var_usar[:,-1])))
+        _ = input("Pulsa")
         resultado_maximo = 0
         for minima_sensibilidad in range(1,7):
             pred = np.sum(var_usar[:,2:8], axis=1) >= minima_sensibilidad #es array logico
