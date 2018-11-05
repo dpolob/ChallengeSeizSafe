@@ -14,7 +14,7 @@ import funciones
 import getopt
 import sys
 import pickle
-
+import DNN
 
 
 #variables globales
@@ -182,14 +182,21 @@ if entrenar:
 
     for k in range(1, 5):
         variableCombinadaModeloK = variableCombinada[ variableCombinada[:, 12] == k ]
+        #Elimino la columna de la posicion
         entradaModeloK = variableCombinadaModeloK[:, :-2]
-        print("Ciclo: {}".format(funciones.DevolverUbicacion(k)))
+        print("Entrenar Ubicacion: {}".format(funciones.DevolverUbicacion(k)))
         print("Shape EntradaModeloK: {}".format(entradaModeloK.shape))
         salidaModeloK = variableCombinadaModeloK[:, -1]
         print("Shape SalidaModeloK: {}".format(salidaModeloK.shape))
         print("Numero de ataques: {}".format(sum(salidaModeloK[salidaModeloK == 1])))
         scalerK = StandardScaler().fit(entradaModeloK)
         entradaModeloK = scalerK.transform(entradaModeloK)
+        
+        #Fusionar ambas
+        datos = np.concatenate(entradaModeloK, salidadModeloK)
+        dnn = DNN.DeepNeuralNetwork(12, 128, 128, 2)
+
+
         parametersK = {'kernel':('rbf', 'sigmoid', 'poly'), 'C':[0.01, 0.1, 1, 10, 100, 1000, 10000]}
         svcK = svm.SVC()
         clfK = GridSearchCV(svcK, parametersK)

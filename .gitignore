@@ -2,3 +2,4 @@ challenge/
 .ipynb_checkpoints/
 _pycache_/
 *~
+.idea/
