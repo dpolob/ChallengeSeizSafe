@@ -30,12 +30,12 @@ class DeepNeuralNetwork(nn.Module):
         return out
 
 
-def entrenarred(datos, dnn, **kwargs):
-    learning_rate = kwargs['learningRate']
-    num_epoch = kwargs['numEpoch']
-    batch_size = kwargs['batchSize']
+def entrenarred(datos, dnn, learning_rate, num_epoch, batch_size):
+    # learning_rate = kwargs['learningRate']
+    # num_epoch = kwargs['numEpoch']
+    # batch_size = kwargs['batchSize']
 
-    lossFN = nn.NLLoss()
+    lossFN = nn.NLLLoss()
     optimizer = torch.optim.Adam(dnn.parameters(), lr=learning_rate)
 
     # Preparacion del dataset con dataloader
@@ -48,8 +48,8 @@ def entrenarred(datos, dnn, **kwargs):
             entrada = torch.tensor(data[:, :-1], dtype=torch.float, requires_grad=True)
             optimizer.zero_grad()
             outputs = dnn(entrada)
-            loss = lossFN(outputs, salidas)
+            loss = lossFN(outputs, salidas.long())
             loss.backward()
             optimizer.step()
 
-        print(f"Epoch {i}/{num_epoch} - Loss: {loss.item()}")
+        print("Epoch {}/{} - Loss: {}".format(epoch, num_epoch, loss.item()))

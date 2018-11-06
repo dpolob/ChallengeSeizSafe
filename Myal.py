@@ -199,10 +199,10 @@ if entrenar:
         entradaModeloK = scalerK.transform(entradaModeloK)
 
         # Fusionar ambas
-        datos = np.concatenate(entradaModeloK, salidaModeloK)
+        datos = np.concatenate((entradaModeloK, salidaModeloK.reshape(len(salidaModeloK),1)), axis=1)
         # Crear red neuronal
         dnn = DNN.DeepNeuralNetwork(12, 128, 128, 2)
-        DNN.entrenarred(datos, dnn, {'learningRate' : 0.01, 'numEpoch' : 100, 'batchSize': 100})
+        DNN.entrenarred(datos, dnn, 0.01, 100, 666666)
         modelos["SCALER" + str(k)] = scalerK
         modelos["SVC" + str(k)] = dnn
 
