@@ -9,13 +9,13 @@ import torch.utils.data
 
 
 class DeepNeuralNetwork(nn.Module):
-    def __init__(self, inputLayer, hidden1Layer, hidden2Layer, outputLayer):
+    def __init__(self, input_layer, hidden1_layer, hidden2_layer, output_layer):
         super(DeepNeuralNetwork, self).__init__()
-        #Configuracion de la red neuronal
-        self.fc1 = nn.Linear(inputLayer, hidden1layer)
-        self.fc2 = nn.Linear(hidden1Layer, hidden2Layer)
-        self.fc3 = nn.Linear(hidden2Layer, outputLayer)
-        #Funciones de activacion
+        # Configuracion de la red neuronal
+        self.fc1 = nn.Linear(input_layer, hidden1_layer)
+        self.fc2 = nn.Linear(hidden1_layer, hidden2_layer)
+        self.fc3 = nn.Linear(hidden2_layer, output_layer)
+        # Funciones de activacion
         self.relu1 = nn.ReLU()
         self.relu2 = nn.ReLU()
         self.logsm1 = nn.LogSoftmax(dim=1)
@@ -27,34 +27,29 @@ class DeepNeuralNetwork(nn.Module):
         out = self.relu2(out)
         out = self.fc3(out)
         out = self.logsm1(out)
-        return(out)
+        return out
 
-def EntrenarRed(datos, dnn, **kwargs):
-    learningRate = kwargs['learningRate']
-    numEpoch = kwargs['numEpoch']
-    batchSize = kwargs['batchSize']
-    
+
+def entrenarred(datos, dnn, **kwargs):
+    learning_rate = kwargs['learningRate']
+    num_epoch = kwargs['numEpoch']
+    batch_size = kwargs['batchSize']
+
     lossFN = nn.NLLoss()
-    optimizer = torch.optim.Adam(dnn.parameters(), lr=learningRate)
+    optimizer = torch.optim.Adam(dnn.parameters(), lr=learning_rate)
 
-    #Preparacion del dataset con dataloader
-    trainLoader = torch.utils.data.DataLoader(dataset=torch.tensor(datos, dtype=torch.float), 
-            batch_size=batchSize, shuffle=True)
+    # Preparacion del dataset con dataloader
+    train_loader = torch.utils.data.DataLoader(dataset=torch.tensor(datos, dtype=torch.float),
+                                              batch_size=batch_size, shuffle=True)
 
-    for epoch in range(numEpoch):
-        for i, data in enumerate(trainLoader, start=1):
-            salidas = torch.tensor(data[:,-1], dtype=torch.float, requires_grad=True)
-            entrada = torch.tensor(data[:,:-1], dtype=torch.float, requires_grad=True)
+    for epoch in range(num_epoch):
+        for i, data in enumerate(train_loader, start=1):
+            salidas = torch.tensor(data[:, -1], dtype=torch.float, requires_grad=True)
+            entrada = torch.tensor(data[:, :-1], dtype=torch.float, requires_grad=True)
             optimizer.zero_grad()
             outputs = dnn(entrada)
             loss = lossFN(outputs, salidas)
             loss.backward()
             optimizer.step()
-        
-        print(f"Epoch {i}/{numEpoch} - Loss: {loss.item()}")
 
-
-
-
-
-
+        print(f"Epoch {i}/{num_epoch} - Loss: {loss.item()}")
