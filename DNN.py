@@ -70,3 +70,9 @@ def EvaluarRed(datos, dnn):
         correct += (predicted == salidas.long()).sum()
 
     print('Accuracy of the network on the data: {}'.format(float((100 * correct / total))))
+
+def ObtenerPrediccion(datos, dnn):
+    data = torch.tensor(datos, dtype=torch.float, requires_grad=True)
+    outputs = dnn(data)
+    _, predicted = torch.max(outputs.data, 1)
+    return (predicted.numpy())
