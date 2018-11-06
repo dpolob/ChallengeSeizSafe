@@ -202,7 +202,7 @@ if entrenar:
         datos = np.concatenate((entradaModeloK, salidaModeloK.reshape(len(salidaModeloK),1)), axis=1)
         # Crear red neuronal
         dnn = DNN.DeepNeuralNetwork(12, 128, 128, 2)
-        DNN.entrenarred(datos, dnn, 0.01, 100, 666666)
+        DNN.entrenarred(datos, dnn, 0.01, 100, 6)
         modelos["SCALER" + str(k)] = scalerK
         modelos["SVC" + str(k)] = dnn
 
@@ -313,10 +313,11 @@ if entrenar:
         print("Shape salidaModelo: {}".format(salidaModeloK.shape))
         scalerK = modelos["SCALER" + str(k)]
         scalerK.transform(entradaModeloK[:, :])
-        clfK = modelos["SVC" + str(k)]
-        prediccionK = clfK.predict(entradaModeloK)
-        print("-------------------------------------------------")
-        print("RESULTADO DEL ESTIMADOR {}: {}".format(k, accuracy_score(salidaModeloK, prediccionK)))
+
+        # Fusionar ambas
+        datos = np.concatenate((entradaModeloK, salidaModeloK.reshape(len(salidaModeloK), 1)), axis=1)
+        dnn = modelos("SVC" + str(k))
+        DNN.EvaluarRed(datos, dnn)
 
     while True:
         respuestaUsuario = input("Desea guardar los estimadores? (y/n)")

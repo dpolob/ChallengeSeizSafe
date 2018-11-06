@@ -53,3 +53,18 @@ def entrenarred(datos, dnn, learning_rate, num_epoch, batch_size):
             optimizer.step()
 
         print("Epoch {}/{} - Loss: {}".format(epoch, num_epoch, loss.item()))
+
+def EvaluarRed(datos, dnn):
+    correct = 0
+    total = 0
+    test_loader = torch.utils.data.DataLoader(dataset=torch.tensor(datos, dtype=torch.float),
+                                              batch_size=datos.shape[0], shuffle=False)
+    for data in test_loader:
+        salidas = torch.tensor(data[:,-1], dtype=torch.float(), requires_grad=True)
+        entradas = torch.tensor(data[:,:-1], dtype=torch.float(), requires_grad=True)
+        outputs = dnn(entradas)
+        _, predicted = torch.max(outputs.data, 1)
+        total += salidas.size(0)
+        correct += (predicted == entradas.long()).sum()
+
+    print('Accuracy of the network on the data: {}'.format((100 * correct / total)))
