@@ -73,6 +73,8 @@ def EvaluarRed(datos, dnn):
 
 def ObtenerPrediccion(datos, dnn):
     data = torch.tensor(datos, dtype=torch.float, requires_grad=True)
+    print("Shape de data: {}".format(data.shape))
     outputs = dnn(data)
     _, predicted = torch.max(outputs.data, 1)
+    print("Shape de predicted {}".format(predicted.shape))
     return (predicted.numpy())

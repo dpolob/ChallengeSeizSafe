@@ -202,7 +202,7 @@ if entrenar:
         datos = np.concatenate((entradaModeloK, salidaModeloK.reshape(len(salidaModeloK),1)), axis=1)
         # Crear red neuronal
         dnn = DNN.DeepNeuralNetwork(12, 128, 128, 2)
-        DNN.entrenarred(datos, dnn, 0.01, 100, 1000)
+        DNN.entrenarred(datos, dnn, 0.01, 100, 60000)
         modelos["SCALER" + str(k)] = scalerK
         modelos["SVC" + str(k)] = dnn
 
@@ -386,19 +386,19 @@ if sensibilidad:
             variableLocal[j, 11] = funciones.calcularentropia(datosTrabajo)
         # Seleccion del modelo SVM entrenado
         scaler_sensibilidad = modelos["SCALER" + str(paciente)]
-        clf_sensibilidad = modelos["SVC" + str(paciente)]
+        dnn = modelos["SVC" + str(paciente)]
         scaler_sensibilidad.transform(variableLocal[:, :])
-        prediccion_sensibilidad = clf_sensibilidad.predict(variableLocal)
+        prediccion_sensibilidad = DNN.ObtenerPrediccion(variableLocal, dnn)
         salida_sensibilidad = (0, 1)['ATQ' in archivo]
         # Montar la variable de salida
         if var_sensibilidad is None:
             var_sensibilidad = np.concatenate(
                 ([idx_archivo], [paciente], prediccion_sensibilidad, [salida_sensibilidad]), axis=0)
-            print(var_sensibilidad)
+            # print(var_sensibilidad)
         else:
             var_sensibilidad = np.vstack((var_sensibilidad, np.concatenate(
                 ([idx_archivo], [paciente], prediccion_sensibilidad, [salida_sensibilidad]), axis=0)))
-            print(var_sensibilidad[-1, :])
+            # print(var_sensibilidad[-1, :])
 
     print("____________________________")
     print("Shape de variable var_sensibilidad: {}".format(var_sensibilidad.shape))
