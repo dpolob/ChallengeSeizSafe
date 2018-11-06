@@ -202,7 +202,7 @@ if entrenar:
         datos = np.concatenate((entradaModeloK, salidaModeloK.reshape(len(salidaModeloK),1)), axis=1)
         # Crear red neuronal
         dnn = DNN.DeepNeuralNetwork(12, 128, 128, 2)
-        DNN.entrenarred(datos, dnn, 0.01, 100, 6)
+        DNN.entrenarred(datos, dnn, 0.01, 100, 1000)
         modelos["SCALER" + str(k)] = scalerK
         modelos["SVC" + str(k)] = dnn
 
@@ -316,7 +316,7 @@ if entrenar:
 
         # Fusionar ambas
         datos = np.concatenate((entradaModeloK, salidaModeloK.reshape(len(salidaModeloK), 1)), axis=1)
-        dnn = modelos("SVC" + str(k))
+        dnn = modelos["SVC" + str(k)]
         DNN.EvaluarRed(datos, dnn)
 
     while True:

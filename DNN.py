@@ -60,11 +60,13 @@ def EvaluarRed(datos, dnn):
     test_loader = torch.utils.data.DataLoader(dataset=torch.tensor(datos, dtype=torch.float),
                                               batch_size=datos.shape[0], shuffle=False)
     for data in test_loader:
-        salidas = torch.tensor(data[:,-1], dtype=torch.float(), requires_grad=True)
-        entradas = torch.tensor(data[:,:-1], dtype=torch.float(), requires_grad=True)
+        print("Tamaño del test_loader {}".format(data.shape))
+        salidas = torch.tensor(data[:,-1], dtype=torch.float, requires_grad=True)
+        entradas = torch.tensor(data[:,:-1], dtype=torch.float, requires_grad=True)
         outputs = dnn(entradas)
         _, predicted = torch.max(outputs.data, 1)
+        print("Tamaño del predicted {}".format(predicted.shape))
         total += salidas.size(0)
-        correct += (predicted == entradas.long()).sum()
+        correct += (predicted == salidas.long()).sum()
 
-    print('Accuracy of the network on the data: {}'.format((100 * correct / total)))
+    print('Accuracy of the network on the data: {}'.format(float((100 * correct / total))))
