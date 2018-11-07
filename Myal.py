@@ -184,6 +184,14 @@ if entrenar:
 
     # Haremos 4 DNN uno por cada paciente
     variableCombinada = np.concatenate((variables, salidas.reshape(len(salidas), 1)), axis=1)
+    ataques = variableCombinada[variableCombinada[:,-1]==1]
+    print("Estoy multiplicando los ataques")
+    print("Shape de la variable ataque {}".format(ataques.shape))
+    ataques = np.repeat(ataques, 30, axis=0)
+    print("Shape de la variable ataque {}".format(ataques.shape))
+    variableCombinada = np.vstack((variableCombinada, ataques))
+    print("Shape de la variable una vez hecha la multiplicacion {}".format(variableCombinada.shape))
+    _ = input("Pulsa")
     modelos = dict()
 
     for k in range(1, 5):
@@ -202,7 +210,7 @@ if entrenar:
         datos = np.concatenate((entradaModeloK, salidaModeloK.reshape(len(salidaModeloK),1)), axis=1)
         # Crear red neuronal
         dnn = DNN.DeepNeuralNetwork(12, 128, 128, 2)
-        DNN.entrenarred(datos, dnn, 0.01, 100, 60000)
+        DNN.entrenarred(datos, dnn, 0.01, 100, 5000)
         modelos["SCALER" + str(k)] = scalerK
         modelos["SVC" + str(k)] = dnn
 
