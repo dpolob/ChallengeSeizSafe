@@ -178,6 +178,16 @@ if entrenar:
     from sklearn.model_selection import GridSearchCV
     #Haremos 4 SVM uno por cada ataque
     variableCombinada = np.concatenate((variables, salidas.reshape(len(salidas),1)), axis=1)
+    ataques = variableCombinada[variableCombinada[:,-1]==1]
+    print("Estoy multiplicando los ataques")
+    print("Shape de la variable ataque {}".format(ataques.shape))
+    ataques = np.repeat(ataques, 30, axis=0)
+    print("Shape de la variable ataque {}".format(ataques.shape))
+    variableCombinada = np.vstack((variableCombinada, ataques))
+    print("Shape de la variable una vez hecha la multiplicacion {}".format(variableCombinada.shape))
+    _ = input("Pulsa")
+
+
     modelos = dict()
 
     for k in range(1, 5):
