@@ -105,6 +105,11 @@ if entrenar:
                     longitudDatos = 400
                     datos = datos[0 : longitudDatos]
             
+            # Filtrado de la señal
+            from scipy import signal
+
+            b, a = signal.butter(4, 25/400/2, 'low')
+            datos = signal.filtfilt(b, a, datos)
             ventanas = funciones.calcularventana(numeroVentanas, freq)
             #calcular ventana hamming para filtrado de extremos
             hammingWindow = funciones.hamming(longitudDatos, freq)
@@ -234,6 +239,15 @@ if entrenar:
                 numeroVentanas = int(longitudDatos // (2.5 * freq))
                 longitudDatos = int(2.5 * numeroVentanas * freq)
                 datos = datos[0 : longitudDatos]
+            
+            
+            if longitudDatos == 0:
+                continue
+
+
+            from scipy import signal
+            b, a = signal.butter(4, 25/400/2, 'low')
+            datos = signal.filtfilt(b, a, datos)
            
             #calcular datos de inicio y fin de las ventanas
             ventanas = funciones.calcularventana(numeroVentanas, freq)
@@ -355,6 +369,14 @@ if sensibilidad:
             numeroVentanas = 6
             datos = datos[0 : (15 * freq)] #ojo que es [ : )
             longitudDatos = int(15 * freq)
+        
+        # Filtrado de datos
+        from scipy import signal
+
+        b, a = signal.butter(4, 25/400/2, 'low')
+        datos = signal.filtfilt(b, a, datos)
+        
+
         diccionario_archivo[idx_archivo] = archivo #guardo en el diccionario el nombre   
         #calcular datos de inicio y fin de las ventanas
         ventanas = funciones.calcularventana(numeroVentanas, freq)
