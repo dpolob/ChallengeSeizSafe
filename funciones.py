@@ -28,7 +28,8 @@ def leerarchivocsv (archivo, columna):
     return (a, a.shape[0])
 
 def calcularenergia(datos):
-    energia =  np.sum(datos) / datos.shape[0] #Energia por segundo
+    media = datos.mean()
+    energia = (1/400) * np.sum(datos - media) #Energia por segundo
     return (energia)
 
 def calcularRMS(datos):
@@ -54,11 +55,11 @@ def calcularfftyee(datos, frecuencia):
     fourierFrequencies = np.array(range(fourierComponents.size))
     fourierFrequencies = fourierFrequencies * (frecuencia / fourierComponents.size)
 
-    fft0to25 = np.sum(fourierCoefficients[(fourierFrequencies >=0.4) & (fourierFrequencies <=25)])
-    fft25to100 = np.sum(fourierCoefficients[(fourierFrequencies > 25) & (fourierFrequencies <= 100)])
-    fft100to200 = np.sum(fourierCoefficients[(fourierFrequencies > 100) & (fourierFrequencies <= 199)])
+    fft0to8 = np.sum(fourierCoefficients[(fourierFrequencies >=0.4) & (fourierFrequencies <=8)])
+    fft8to16 = np.sum(fourierCoefficients[(fourierFrequencies > 8) & (fourierFrequencies <= 16)])
+    fft16to30 = np.sum(fourierCoefficients[(fourierFrequencies > 16) & (fourierFrequencies <= 30)])
     ee = np.sqrt(np.sum((fourierCoefficients * fourierFrequencies)**2))
-    return (fft0to25, fft25to100, fft100to200, ee)
+    return (fft0to8, fft8to16, fft16to30, ee)
 
 def calcularestadisticos(datos):
     #8-> kur 9-> skew , 10 -> var, 11 -> entropia
@@ -86,4 +87,12 @@ def CalcularResultado(pred, real):
     m = pred[(pred==0) & (real==0)].shape[0]
     N = real[real==1].shape[0]
     M = real.shape[0] - N
-    return(55 * (n / N) + 42.5 * (m / M)) 
+    return(55 * (n / N) + 42.5 * (m / M))
+
+def leer_csv_2in (archivo, columna1, columna2):
+    df = pd.read_csv(archivo, float_precision='high')
+    a = df.iloc[: , columna1].values
+    b = df.iloc[: , columna2].values
+    return (a,b, a.shape[0])
+
+
