@@ -13,6 +13,7 @@ import pdb
 from sklearn import utils
 import funcionLSTM
 import funcionesDataSet
+from sklearn.metrics import accuracy_score
 
 # Carga de librerias Pytorch
 import torch
@@ -376,106 +377,112 @@ if entrenar:
     accuracy = np.array([])
     minAccuracy = 0.0
 
-
     variableModeloK = variablesTrain.reshape(6, -1, 20)
     variableModeloK = variableModeloK[:, :, :-1]  # quitamos paciente
 
-    print("Shape dataset: {}".format( variableModeloK.shape))
-    print("Numero de ataques: {}".format(variableModeloK[variableModeloK[:, :, 18] == 1].shape[0] / 6))
-    print("------------------------------------------------------------")
+    dataset = funcionesDataSet.Data3DSet(variableModeloK)
 
-    ataques = variableModeloK[variableModeloK[:, :, -1] == 1].reshape(6, -1, 19)
-    print("Shape de ataques : {}".format(ataques.shape))
-    numeroAtaques = ataques.shape[1]
-    print(numeroAtaques)
-    # ataques = np.repeat(ataques, int(variableModeloK.shape[1] // numeroAtaques) - 1, axis=1)
-    ataques = np.repeat(ataques, int((variableModeloK.shape[1] // numeroAtaques) / 4), axis=1)
-    variableModeloK = np.append(variableModeloK, ataques, axis=1)
-    print("Los ataques han sido ampliados. Resultado: {}".format(variableModeloK.shape))
-    print("Numero de ataques: {}".format(variableModeloK[variableModeloK[:, :, -1] == 1].shape[0] / 6))
+    # print("Shape dataset: {}".format(variableModeloK.shape))
+    # print("Numero de ataques: {}".format(variableModeloK[variableModeloK[:, :, 18] == 1].shape[0] / 6))
+    # print("------------------------------------------------------------")
 
+    dataset.multiplicar_ataques()
+    # ataques = variableModeloK[variableModeloK[:, :, -1] == 1].reshape(6, -1, 19)
+    # print("Shape de ataques : {}".format(ataques.shape))
+    # numeroAtaques = ataques.shape[1]
+    # print(numeroAtaques)
+    # # ataques = np.repeat(ataques, int(variableModeloK.shape[1] // numeroAtaques) - 1, axis=1)
+    # ataques = np.repeat(ataques, int((variableModeloK.shape[1] // numeroAtaques) / 4), axis=1)
+    # variableModeloK = np.append(variableModeloK, ataques, axis=1)
+    # print("Los ataques han sido ampliados. Resultado: {}".format(variableModeloK.shape))
+    # print("Numero de ataques: {}".format(variableModeloK[variableModeloK[:, :, -1] == 1].shape[0] / 6))
 
+    dataset.normalizacion()
 
-    # Normalizacion
-    from sklearn.preprocessing import StandardScaler
-    from sklearn.metrics import accuracy_score
+    # # Normalizacion
+    # from sklearn.preprocessing import StandardScaler
+    # from sklearn.metrics import accuracy_score
+    #
+    # scalerK = StandardScaler()
+    # variableModeloK = variableModeloK.reshape(-1, 19)
+    # print("variableModeloK flatten: {}".format(variableModeloK.shape))
+    # variableModeloK[:, :-1] = scalerK.fit_transform(variableModeloK[:, :-1])
+    # variableModeloK = variableModeloK.reshape(6, -1, 19)
+    # print("variableModeloK postflatten: {}".format(variableModeloK.shape))
+    # # Comprobacion de que las salidas son las mismas
+    # print("EVALUACION")
+    # for t in range(variableModeloK.shape[1]):
+    #     assert variableModeloK[0, t, -1] == variableModeloK[1, t, -1] == variableModeloK[2, t, -1] == variableModeloK[3, t, -1] \
+    #             == variableModeloK[4, t, -1] == variableModeloK[5, t, -1] , "No son iguales"
 
-    scalerK = StandardScaler()
-    variableModeloK = variableModeloK.reshape(-1, 19)
-    print("variableModeloK flatten: {}".format(variableModeloK.shape))
-    variableModeloK[:, :-1] = scalerK.fit_transform(variableModeloK[:, :-1])
-    variableModeloK = variableModeloK.reshape(6, -1, 19)
-    print("variableModeloK postflatten: {}".format(variableModeloK.shape))
-    # Comprobacion de que las salidas son las mismas
-    print("EVALUACION")   
-    for t in range(variableModeloK.shape[1]):
-        assert variableModeloK[0, t, -1] == variableModeloK[1, t, -1] == variableModeloK[2, t, -1] == variableModeloK[3, t, -1] \
-                == variableModeloK[4, t, -1] == variableModeloK[5, t, -1] , "No son iguales"
+    dataset.shuffle()
+    # # Shuffle del dataset
+    # aleatorio = np.arange(variableModeloK.shape[1])
+    # np.random.shuffle(aleatorio)
+    # variableModeloK = variableModeloK[:, aleatorio, :]
+    # print("shape variableModeloK: {}".format(variableModeloK.shape))
+    # # Comprobacion de que las salidas son las mismas
+    # print("EVALUACION")
+    # for t in range(variableModeloK.shape[1]):
+    #     assert variableModeloK[0, t, -1] == variableModeloK[1, t, -1] == variableModeloK[2, t, -1] == \
+    #            variableModeloK[3, t, -1] \
+    #            == variableModeloK[4, t, -1] == variableModeloK[5, t, -1], "No son iguales"
 
+    # Train y Testi
+    dataset.split(batch_size=batchSize, porcentaje_train=0.8)
+    # muestras = variableModeloK.shape[1]
+    # muestrasTrain = (muestras * 0.8) // 1200
+    # muestrasTrain = int(muestrasTrain * 1200)
+    # muestrasValidation = (muestras - muestrasTrain) // 1200
+    # muestrasValidation = int(muestrasValidation * 1200)
+    # print(
+    #     "batchSize: {}, muestrasTrain: {}, muestrasValidation: {}".format(batchSize, muestrasTrain, muestrasValidation))
+    # # Comprobacion de que las salidas son las mismas
+    #
+    # # Definir el dataset de Train y Test
+    # train = variableModeloK[:, :muestrasTrain, :]
+    # validation = variableModeloK[:, muestrasTrain:muestrasValidation + muestrasTrain, :]
+    # print("train.shape: {}".format(train.shape))
+    # print("validation.shape: {}".format(validation.shape))
+    # print("EVALUACION")
+    # for t in range(train.shape[1]):
+    #     assert train[0, t, -1] == train[1, t, -1] == train[2, t, -1] == train[3, t, -1] \
+    #             == train[4, t, -1] == train[5, t, -1] , "No son iguales"
+    #
 
-    # Shuffle del dataset
-    aleatorio = np.arange(variableModeloK.shape[1])
-    np.random.shuffle(aleatorio)
-    variableModeloK = variableModeloK[:, aleatorio, :]
-    print("shape variableModeloK: {}".format(variableModeloK.shape))
-    # Comprobacion de que las salidas son las mismas
-    print("EVALUACION")   
-    for t in range(variableModeloK.shape[1]):
-        assert variableModeloK[0, t, -1] == variableModeloK[1, t, -1] == variableModeloK[2, t, -1] == variableModeloK[3, t, -1] \
-                == variableModeloK[4, t, -1] == variableModeloK[5, t, -1] , "No son iguales"
+    #  # definir pipeline
+    #  # pasar a 2D el train, es necesario ya que DataLoader no trabaja con 3D
+    #  # train = train.reshape(-1, 19)
+    #  trainIterator = funcionesDataSet.Data3DSet(train)
+    #  #trainLoader = torch.utils.data.DataLoader(dataset=train,
+    #  #                                          batch_size=batchSize,
+    #  #                                          shuffle=False)
+    #
+    # # pasa a 2D el validation
+    #  # validation = validation.reshape(-1, 19)
+    #  validationIterator = funcionesDataSet.Data3DSet(validation)
+    #  # validationLoader = torch.utils.data.DataLoader(dataset=validation,
+    #  #                                               batch_size=batchSize,
+    #  #                                               shuffle=False)
 
+    # ataques = train[train[:, :, -1] == 1].reshape(6, -1, 19)
+    # numeroAtaques = ataques.shape[1]
+    #
+    # classWeights = torch.tensor([1 / (train.shape[1] - numeroAtaques), 1 / numeroAtaques])
+    # print(classWeights)
 
-    # Train y Test
-    muestras = variableModeloK.shape[1]
-    muestrasTrain = (muestras * 0.8) // 1200
-    muestrasTrain = int(muestrasTrain * 1200)
-    muestrasValidation = (muestras - muestrasTrain) // 1200
-    muestrasValidation = int(muestrasValidation * 1200)
-    print(
-        "batchSize: {}, muestrasTrain: {}, muestrasValidation: {}".format(batchSize, muestrasTrain, muestrasValidation))
-    # Comprobacion de que las salidas son las mismas
-
-    # Definir el dataset de Train y Test
-    train = variableModeloK[:, :muestrasTrain, :]
-    validation = variableModeloK[:, muestrasTrain:muestrasValidation + muestrasTrain, :]
-    print("train.shape: {}".format(train.shape))
-    print("validation.shape: {}".format(validation.shape))
-    print("EVALUACION")   
-    for t in range(train.shape[1]):
-        assert train[0, t, -1] == train[1, t, -1] == train[2, t, -1] == train[3, t, -1] \
-                == train[4, t, -1] == train[5, t, -1] , "No son iguales"
-
-
-    # definir pipeline
-    # pasar a 2D el train, es necesario ya que DataLoader no trabaja con 3D
-    # train = train.reshape(-1, 19)
-    trainIterator = funcionesDataSet.Data3DSet(train)
-    #trainLoader = torch.utils.data.DataLoader(dataset=train,
-    #                                          batch_size=batchSize,
-    #                                          shuffle=False)
-
-   # pasa a 2D el validation
-    # validation = validation.reshape(-1, 19)
-    validationIterator = funcionesDataSet.Data3DSet(validation)
-    # validationLoader = torch.utils.data.DataLoader(dataset=validation,
-    #                                               batch_size=batchSize,
-    #                                               shuffle=False)
+    classWeights = dataset.weights_clases()
 
     # Crear red
     miLstm = funcionLSTM.LSTM(input_dim=18, batch_size=int(batchSize), hidden_dim=24, output_dim=2, num_layers=2, dropout=0.5)
-    
-    ataques = train[train[:, :, -1] == 1].reshape(6, -1, 19)
-    numeroAtaques = ataques.shape[1]
-    
-    classWeights = torch.tensor([1 / (train.shape[1] - numeroAtaques), 1 / numeroAtaques])
-    print(classWeights)
     lossFN = nn.CrossEntropyLoss(weight=classWeights)
     optimiser = optim.Adam(miLstm.parameters(), lr=learning_rate)
+
     for epoch in range(numEpoch):
         miLstm.hidden = miLstm.init_hidden()
-        for i in range(int(train.shape[1] / batchSize)):
+        for i in range(int(dataset.__len__(train=True) / batchSize)):
             rangoBatch = range(i * batchSize, (i + 1) * batchSize, 1)
-            data = torch.tensor(trainIterator.__getitem__(rangoBatch))
+            data = torch.tensor(dataset.__getitem__(rangoBatch, train=True, test=False))
             # print("EVALUACION TRAIN")   
             # for t in range(data.shape[1]):
             #    assert data[0, t, -1] == data[1, t, -1] == data[2, t, -1] == data[3, t, -1] \
@@ -503,11 +510,11 @@ if entrenar:
         if epoch % 5 == 0:
             lossVal = 0.0
             accuracyVal = 0.0
-            for j in range(int(validation.shape[1] / batchSize)):
+            for j in range(int(dataset.__len__(test=True) / batchSize)):
                 # convertir de 2D a 3D
                 # dataIn = dataIn.reshape(6, -1, 19)
                 rangoBatch = range(j * batchSize, (j + 1) * batchSize, 1)
-                dataIn = torch.tensor(validationIterator.__getitem__(rangoBatch))
+                dataIn = torch.tensor(dataset.__getitem__(rangoBatch, train=False, test=True))
                 # a = dataIn
                 # print("EVALUACIONi VALIDATION")   
                 # for t in range(a.shape[1]):
