@@ -13,7 +13,6 @@ import pdb
 from sklearn import utils
 import funcionLSTM
 import funcionesDataSet
-from sklearn.metrics import accuracy_score
 
 # Carga de librerias Pytorch
 import torch
@@ -480,7 +479,7 @@ if entrenar:
 
     for epoch in range(numEpoch):
         miLstm.hidden = miLstm.init_hidden()
-        for i in range(int(dataset.__len__(train=True) / batchSize)):
+        for i in range(int(train.shape[1] / batchSize)):
             rangoBatch = range(i * batchSize, (i + 1) * batchSize, 1)
             data = torch.tensor(trainIterator.__getitem__(rangoBatch, train=True, test=False))
             # print("EVALUACION TRAIN")   
@@ -510,11 +509,11 @@ if entrenar:
         if epoch % 5 == 0:
             lossVal = 0.0
             accuracyVal = 0.0
-            for j in range(int(dataset.__len__(test=True) / batchSize)):
+            for j in range(int(validation.shape[1] / batchSize)):
                 # convertir de 2D a 3D
                 # dataIn = dataIn.reshape(6, -1, 19)
                 rangoBatch = range(j * batchSize, (j + 1) * batchSize, 1)
-                dataIn = torch.tensor(validationIterator.__getitem__(rangoBatch))
+                dataIn = torch.tensor(validationIterator.__getitem__(rangoBatch, train=False, test=True))
                 # a = dataIn
                 # print("EVALUACIONi VALIDATION")   
                 # for t in range(a.shape[1]):
