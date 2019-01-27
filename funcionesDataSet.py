@@ -21,10 +21,15 @@ class Data3DSet(Dataset):
         self.dataTest = []
         print("Creacion del dataset")
         print("\tTamaño del dataset: {}".format(self.data.shape))
-        print("{GRENN}Correcto{END}".format(**self.formatters))
+        print("{GREEN}Correcto{END}".format(**self.formatters))
 
-    def __len__(self):
-        return self.data.shape[1]
+    def __len__(self, train=False, test=False):
+        if not train and not test:
+            return self.data.shape[1]
+        if train:
+            return self.dataTrain.shape[1]
+        if test:
+            return self.dataTest.shape[1]
 
     def __getitem__(self, index, train=False, test=False):
         if not train and not test:
@@ -57,7 +62,7 @@ class Data3DSet(Dataset):
         self.data = self.data[:, aleatorio, :]
         print("\tsalida: {}".format(self.data.shape))
         self.comprobacion(self.data)
-        print("{GRENN}Correcto{END}".format(**self.formatters))
+        print("{GREEN}Correcto{END}".format(**self.formatters))
         
     def split(self, batch_size, porcentaje_train=0.8):
         """
@@ -75,18 +80,19 @@ class Data3DSet(Dataset):
         print("\tbatchSize: {}".format(batch_size))
         print("\ttamaño del set de train: {}".format(muestrasTrain))
         print("\ttamaño del set de test: {}".format(muestrasTest))
-        self.dataTrain = self.data[:, muestrasTrain, :]
+        self.dataTrain = self.data[:, :muestrasTrain, :]
         self.comprobacion(self.dataTrain)
-        self.dataTest = self.dataTrain[:, muestrasTrain:muestrasTrain + muestrasTest, :]
+        self.dataTest = self.data[:, muestrasTrain:muestrasTrain + muestrasTest, :]
         self.comprobacion(self.dataTest)
-        print("{GRENN}Correcto{END}".format(**self.formatters))
+        print("{GREEN}Correcto{END}".format(**self.formatters))
 
     def normalizacion(self):
         """
         Normaliza el dataset
         """
-        print("Normalizcion")
+        print("Normalizacion")
         scaler = StandardScaler()
+        self.data = self.data.reshape(-1, 19)        
         self.data[:, :-1] = scaler.fit_transform(self.data[:, :-1])
         self.data = self.data.reshape(6, -1, 19)
         self.comprobacion(self.data)
@@ -103,7 +109,7 @@ class Data3DSet(Dataset):
         print("\tNumero de ataques despues de la multiplicacion: {}"
               .format(self.data[self.data[:, :, -1] == 1].shape[0] / 6))
         self.comprobacion(self.data)
-        print("{GRENN}Correcto{END}".format(**self.formatters))
+        print("{GREEN}Correcto{END}".format(**self.formatters))
 
     def weights_clases(self):
         print("Calcular pesos de las clases")
