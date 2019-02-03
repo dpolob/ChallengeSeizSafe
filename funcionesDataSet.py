@@ -19,6 +19,7 @@ class Data3DSet(Dataset):
         self.data = data
         self.dataTrain = []
         self.dataTest = []
+        self.scaler = StandardScaler()
         print("Creacion del dataset")
         print("\tTamaño del dataset: {}".format(self.data.shape))
         print("{GREEN}Correcto{END}".format(**self.formatters))
@@ -86,17 +87,23 @@ class Data3DSet(Dataset):
         self.comprobacion(self.dataTest)
         print("{GREEN}Correcto{END}".format(**self.formatters))
 
-    def normalizacion(self):
+    def normalizacion(self, escalador=None):
         """
         Normaliza el dataset
+        returns: escalador
         """
         print("Normalizacion")
-        scaler = StandardScaler()
-        self.data = self.data.reshape(-1, 19)        
-        self.data[:, :-1] = scaler.fit_transform(self.data[:, :-1])
+        if escalador is None:
+            self.scaler.fit(self.data[:, :-1])
+        else:
+            self.scaler = escalador
+
+        self.data = self.data.reshape(-1, 19)
+        self.data[:, :-1] = self.scaler.transform(self.data[:, :-1])
         self.data = self.data.reshape(6, -1, 19)
         self.comprobacion(self.data)
         print("{GREEN}Correcto{END}".format(**self.formatters))
+        return self.scaler
 
     def multiplicar_ataques(self):
         print("Multiplicar ataques")
@@ -119,3 +126,5 @@ class Data3DSet(Dataset):
         print("\tClase 0: {}".format(1 / (self.dataTrain.shape[1] - numeroAtaques)))
         print("\tClase 1: {}".format(1 / numeroAtaques))
         return classWeights
+
+

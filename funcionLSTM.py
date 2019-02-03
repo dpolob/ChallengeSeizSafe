@@ -19,7 +19,7 @@ class LSTM(nn.Module):
         self.lstm = nn.LSTM(self.input_dim, self.hidden_dim, self.num_layers, self.dropout)
         # Definir capa de salida: Linear + Dropout layer
         self.linear = nn.Linear(self.hidden_dim, output_dim)
-        self.drop = nn.Dropout(p=0.5)
+        self.drop = nn.Dropout(p=self.dropout)
         self.logsoftmax = nn.LogSoftmax()
 
     def init_hidden(self):

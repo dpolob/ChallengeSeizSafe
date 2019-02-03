@@ -9,21 +9,13 @@ import numpy as np
 from os import path, getcwd, listdir
 import funciones
 import pickle
-import pdb
-from sklearn import utils
 import funcionLSTM
 import funcionesDataSet
+import pandas as pd
 
 # Carga de librerias Pytorch
 import torch
-import torch.autograd as autograd
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
-from torch.autograd import Variable
-# import torch.utils.data
-from sklearn.metrics import accuracy_score
-
+from sklearn.metrics import confusion_matrix
 
 # variables globales
 version = 'LSTM Binary Classificator'
@@ -32,14 +24,22 @@ pathTrain = '/home/diego/Documents/DataChallenge/training/'
 pathTest = '/home/diego/Documents/DataChallenge/testing/'
 pathPrediccion = '/home/diego/Documents/DataChallenge/'
 cwd = getcwd()
-inZ = 4  # 4 lee el modulo, 3 lee eje Z
+inZ = 4  # 4 lee el modulo, 1 lee eje X
 inX = 1
 numPacientes = 4
 entrenar, predecir = (False, False)
 existeVariableTrain, existeVariableTest = (False, False)
+formatters = {
+    'RED': '\033[91m',
+    'GREEN': '\033[92m',
+    'END': '\033[0m',
+}
+batchSize = 2400  # debe ser multiplo de 6
 
-print('SEIZSAFE LSTM BINARY CLASSIFICATOR')
+# COMIENZO
+print('{GREEN}SEIZSAFE LSTM BINARY CLASSIFICATOR{END}'.format(**formatters))
 print('__________________________________')
+print()
 print()
 
 while True:
@@ -73,15 +73,28 @@ if entrenar:
                     break
             break
 
+if predecir:
+    while True:
+        print("Ruta del modelo [{}].".format(cwd))
+        rutaModelo = input()
+        rutaModelo = path.join(cwd, rutaModelo)
+        if path.isfile(rutaModelo):
+            break
+        else:
+            print("{RED}La ruta no es valida{END}".format(**formatters))
+
     while True:
         existeVariableTest = input("Existe archivo de variables de test? [S]i|[N]o")
         if existeVariableTest in ('S', 's'):
-            existeVariableTest = True
-            print("Ruta de las variables [{}].".format(cwd))
+            print("Ruta de las variables [{}] : ".format(cwd))
             rutaVariablesTest = input()
             rutaVariablesTest = path.join(cwd, rutaVariablesTest)
-            print(rutaVariablesTest)
-            break
+            if path.isfile(rutaVariablesTest):
+                existeVariableTest = True
+                break
+            else:
+                print("{RED}La ruta no es valida{END}".format(**formatters))
+
         elif existeVariableTest in ('N', 'n'):
             existeVariableTest = False
             print("Ruta de los archivos de test [{}]".format(pathTest))
@@ -92,29 +105,14 @@ if entrenar:
                 elif correcto in ('N', 'n'):
                     pathTest = path.abspath(input("Nueva ruta: "))
                     break
-            break
 
-if predecir:
-    print("Ruta del modelo [{}].".format(cwd))
-    rutaModelo = input()
-    rutaModelo = path.join(cwd, rutaModelo)
-    print(rutaModelo)
-    print("Ruta de los archivos para predecir [{}]".format(pathTest))
-    while True:
-        correcto = input("Correcto? [S]i|[N]o")
-        if correcto in ('S', 's'):
-            break
-        elif correcto in ('N', 'n'):
-            pathTest = path.abspath(input("Nueva ruta: "))
-            break
 
-    # La idea es crear una variable que almacene las muestras en el siguiente formato
-    # (6, numero de casos, 18)
-    # 6 cada fila representa un instante temporal
-    # numero de casos: uno por cada 6*15 segundos de archivo
-    # 18 es el numero de variables a analizar
-
-    # 1: [V1z, V1x], [V2z, V2x],...,[Vnz, V1x] = (numeroVentanas * 18)
+# La idea es crear una variable que almacene las muestras en el siguiente formato
+# (6, numero de casos, 18)
+# 6 cada fila representa un instante temporal
+# numero de casos: uno por cada 6*15 segundos de archivo
+# 18 es el numero de variables a analizar
+# 1: [V1z, V1x], [V2z, V2x],...,[Vnz, V1x] = (numeroVentanas * 18)
 
 if entrenar and not existeVariableTrain:
     variablesTrain = None
@@ -232,13 +230,21 @@ if entrenar and not existeVariableTrain:
         if correcto in ('N', 'n'):
             break
 
-if entrenar and not existeVariableTest:
+if entrenar and existeVariableTrain:
+    diccionario = pickle.load(open(rutaVariablesTrain, 'rb'))
+    variablesTrain = diccionario['VARIABLES']
+    print("He cargado la variables de train. Resultado: {}".format(variablesTrain.shape))
+    print("Numero de movimientos: {}".format(variablesTrain[variablesTrain[:, :, 18] == 1].shape[0]/6))
+    print("------------------------------------------------------------")
+
+
+if predecir and not existeVariableTest:
     variablesTest = None
-    totalVentanas = 0
+    # totalVentanas = 0
     listaArchivos = listdir(pathTest)
 
     # Por cada archivo leer el contenido del csv
-    for archivo in listaArchivos:
+    for indiceArchivo, archivo in enumerate(listaArchivos):
         print(archivo)
         # Si no es archivo continuo, evito . y ..
         if not path.isfile(path.join(pathTest, archivo)):
@@ -246,32 +252,19 @@ if entrenar and not existeVariableTest:
         # Leer datos
         datosM, datosX, longitudDatos = funciones.leer_csv_2in(path.abspath(path.join(pathTest, archivo)), inZ, inX)
         # Comprobar longitud de los archivos
-        if longitudDatos == 15 * freq:
-            pass
-        elif longitudDatos > 15 * freq:  # se recorta
-            longitudEntera = longitudDatos // (15 * freq)
-            longitudEntera = 60 if longitudEntera > 60 else longitudEntera
-            datosM = datosM[0: longitudEntera * (15 * freq)]
-            datosX = datosX[0: longitudEntera * (15 * freq)]
-        elif longitudDatos < 15 * freq:  # se amplia y luego se recorta
-            numeroRepeticiones = ((15 * freq) // longitudDatos) + 1
-            datosM = np.tile(datosM, numeroRepeticiones)
-            datosX = np.tile(datosX, numeroRepeticiones)
-            longitudEntera = datosM.shape[0] // (15 * freq)
-            datosM = datosM[0: longitudEntera * (15 * freq)]
-            datosX = datosX[0: longitudEntera * (15 * freq)]
+        if not longitudDatos == 15 * freq:
+            print("{RED}Hay un archivo que no tiene longitud de 15 segundos{END}".format(**formatters))
+            exit(2)
 
         # Evaluamos siempre por si hay error
         assert (datosM.shape[0] == datosX.shape[0]), 'Shape de de datosM y DatosX no son lo mismo'
-        assert (datosM.shape[0] % (2.5 * freq) == 0), 'Longitud de los datos no es multiplo de 15 sg'
-        longitudDatos = datosM.shape[0]
+        assert (datosM.shape[0] == 15 * freq), 'Longitud de los datos no es multiplo de 15 sg'
 
         # Hacer ventanas
         numeroVentanas = int(longitudDatos // (2.5 * freq))
         ventanas = funciones.calcularventana(numeroVentanas, freq)
-        assert (numeroVentanas % 6 == 0), 'Numero de ventanas no es multiplo de 6'
+        assert (numeroVentanas == 6), '{RED}Numero de ventanas debe ser 6{END}'.format(**formatters)
 
-        totalVentanas += numeroVentanas
         # Filtrado de la señal
         from scipy import signal
 
@@ -301,7 +294,7 @@ if entrenar and not existeVariableTest:
             kur, skew, var = funciones.calcularestadisticos(datosTrabajoX)
             variableTemporal = np.append(variableTemporal,
                                          [energia, acf, FFT0to8, FFT8to16, FFT16to30, EE, kur, skew, var,
-                                          (0, 1)['ATQ' in archivo], int(funciones.devolverpaciente(archivo))])
+                                          indiceArchivo, int(funciones.devolverpaciente(archivo))])
             assert variableTemporal.shape[0] % 20 == 0, "Variable temporal no es multiplo de 20"
 
         # Montar la variable
@@ -309,7 +302,7 @@ if entrenar and not existeVariableTest:
         variableLocal = np.zeros((6, int(numeroVentanas / 6), 20))
         indiceFilas, indiceColumna, indiceZ = (-1, -1, 0)
         for indice, valor in enumerate(variableTemporal, 0):
-            if indice % 20 ==0:
+            if indice % 20 == 0:
                 indiceFilas += 1
                 if indiceFilas == 6:
                     indiceFilas = 0
@@ -330,9 +323,9 @@ if entrenar and not existeVariableTest:
                         variableLocal.shape[2] == variablesTest.shape[2])), 'No coinciden los tipos de las matrices'
             variablesTest = np.append(variablesTest, variableLocal, axis=1)
 
+    numeroArchivos = variablesTest.shape[0] / 6
     print('Variables de Test. Resultado: {}'.format(variablesTest.shape))
-    print('Numero total de ventanas: {}'.format(totalVentanas))
-    print('Numero de ataques: {}'.format(variablesTest[variablesTest[:, :, 18] == 1].shape[0]))
+    print('Numero de archivos: {}'.format(variablesTest.shape[0] / 6))
     print("------------------------------------------------------------")
     # Guardar variables en pickle
     while True:
@@ -340,25 +333,19 @@ if entrenar and not existeVariableTest:
         if correcto in ('S', 's'):
             rutaVariablesTest = input("Archivo: Ruta[{}] : ".format(cwd))
             rutaVariablesTest = path.abspath(path.join(getcwd(), rutaVariablesTest))
-            diccionario = {'VARIABLES': variablesTest}
+            diccionario = {'VARIABLES': variablesTest, 'ARCHIVOS': variablesTest.shape[0] / 6}
             pickle.dump(diccionario, open(rutaVariablesTest, "wb"))
             print("Variables guardadas en el archivo: {}".format(rutaVariablesTest))
             break
         if correcto in ('N', 'n'):
             break
 
-if entrenar and existeVariableTrain:
-    diccionario = pickle.load(open(rutaVariablesTrain, 'rb'))
-    variablesTrain = diccionario['VARIABLES']
-    print("He cargado la variables de train. Resultado: {}".format(variablesTrain.shape))
-    print("Numero de movimientos: {}".format(variablesTrain[variablesTrain[:, :, 18] == 1].shape[0]/6))
-    print("------------------------------------------------------------")
-
-if entrenar and existeVariableTest:
+if predecir and existeVariableTest:
     diccionario = pickle.load(open(rutaVariablesTest, 'rb'))
     variablesTest = diccionario['VARIABLES']
+    numeroArchivos = diccionario['ARCHIVOS']
     print("He cargado la variables de train. Resultado: {}".format(variablesTest.shape))
-    print("Numero de movimientos: {}".format(variablesTest[variablesTest[:, :, 18] == 1].shape[0] / 6))
+    print("Numero de archivos:{}".format(variablesTest.shape[0] / 6))
     print("------------------------------------------------------------")
 
 if entrenar:
@@ -371,7 +358,6 @@ if entrenar:
 
     numEpoch = 100
     learning_rate = 0.01
-    batchSize = 2400  # debe ser multiplo de 6
     lossTraining = np.array([])
     lossValidation = np.array([])
     accuracy = np.array([])
@@ -381,96 +367,14 @@ if entrenar:
     variableModeloK = variableModeloK[:, :, :-1]  # quitamos paciente
 
     dataset = funcionesDataSet.Data3DSet(variableModeloK)
-
-    # print("Shape dataset: {}".format(variableModeloK.shape))
-    # print("Numero de ataques: {}".format(variableModeloK[variableModeloK[:, :, 18] == 1].shape[0] / 6))
-    # print("------------------------------------------------------------")
-
     dataset.multiplicar_ataques()
-    # ataques = variableModeloK[variableModeloK[:, :, -1] == 1].reshape(6, -1, 19)
-    # print("Shape de ataques : {}".format(ataques.shape))
-    # numeroAtaques = ataques.shape[1]
-    # print(numeroAtaques)
-    # # ataques = np.repeat(ataques, int(variableModeloK.shape[1] // numeroAtaques) - 1, axis=1)
-    # ataques = np.repeat(ataques, int((variableModeloK.shape[1] // numeroAtaques) / 4), axis=1)
-    # variableModeloK = np.append(variableModeloK, ataques, axis=1)
-    # print("Los ataques han sido ampliados. Resultado: {}".format(variableModeloK.shape))
-    # print("Numero de ataques: {}".format(variableModeloK[variableModeloK[:, :, -1] == 1].shape[0] / 6))
+    escalador = dataset.normalizacion()
 
-    dataset.normalizacion()
-
-    # # Normalizacion
-    # from sklearn.preprocessing import StandardScaler
-    # from sklearn.metrics import accuracy_score
-    #
-    # scalerK = StandardScaler()
-    # variableModeloK = variableModeloK.reshape(-1, 19)
-    # print("variableModeloK flatten: {}".format(variableModeloK.shape))
-    # variableModeloK[:, :-1] = scalerK.fit_transform(variableModeloK[:, :-1])
-    # variableModeloK = variableModeloK.reshape(6, -1, 19)
-    # print("variableModeloK postflatten: {}".format(variableModeloK.shape))
-    # # Comprobacion de que las salidas son las mismas
-    # print("EVALUACION")
-    # for t in range(variableModeloK.shape[1]):
-    #     assert variableModeloK[0, t, -1] == variableModeloK[1, t, -1] == variableModeloK[2, t, -1] == variableModeloK[3, t, -1] \
-    #             == variableModeloK[4, t, -1] == variableModeloK[5, t, -1] , "No son iguales"
+    diccionario = {'SCALER': escalador}
+    pickle.dump(diccionario, open(path.join(cwd, "Escalador.pickle"), "wb"))
 
     dataset.shuffle()
-    # # Shuffle del dataset
-    # aleatorio = np.arange(variableModeloK.shape[1])
-    # np.random.shuffle(aleatorio)
-    # variableModeloK = variableModeloK[:, aleatorio, :]
-    # print("shape variableModeloK: {}".format(variableModeloK.shape))
-    # # Comprobacion de que las salidas son las mismas
-    # print("EVALUACION")
-    # for t in range(variableModeloK.shape[1]):
-    #     assert variableModeloK[0, t, -1] == variableModeloK[1, t, -1] == variableModeloK[2, t, -1] == \
-    #            variableModeloK[3, t, -1] \
-    #            == variableModeloK[4, t, -1] == variableModeloK[5, t, -1], "No son iguales"
-
-    # Train y Testi
     dataset.split(batch_size=batchSize, porcentaje_train=0.8)
-    # muestras = variableModeloK.shape[1]
-    # muestrasTrain = (muestras * 0.8) // 1200
-    # muestrasTrain = int(muestrasTrain * 1200)
-    # muestrasValidation = (muestras - muestrasTrain) // 1200
-    # muestrasValidation = int(muestrasValidation * 1200)
-    # print(
-    #     "batchSize: {}, muestrasTrain: {}, muestrasValidation: {}".format(batchSize, muestrasTrain, muestrasValidation))
-    # # Comprobacion de que las salidas son las mismas
-    #
-    # # Definir el dataset de Train y Test
-    # train = variableModeloK[:, :muestrasTrain, :]
-    # validation = variableModeloK[:, muestrasTrain:muestrasValidation + muestrasTrain, :]
-    # print("train.shape: {}".format(train.shape))
-    # print("validation.shape: {}".format(validation.shape))
-    # print("EVALUACION")
-    # for t in range(train.shape[1]):
-    #     assert train[0, t, -1] == train[1, t, -1] == train[2, t, -1] == train[3, t, -1] \
-    #             == train[4, t, -1] == train[5, t, -1] , "No son iguales"
-    #
-
-    #  # definir pipeline
-    #  # pasar a 2D el train, es necesario ya que DataLoader no trabaja con 3D
-    #  # train = train.reshape(-1, 19)
-    #  trainIterator = funcionesDataSet.Data3DSet(train)
-    #  #trainLoader = torch.utils.data.DataLoader(dataset=train,
-    #  #                                          batch_size=batchSize,
-    #  #                                          shuffle=False)
-    #
-    # # pasa a 2D el validation
-    #  # validation = validation.reshape(-1, 19)
-    #  validationIterator = funcionesDataSet.Data3DSet(validation)
-    #  # validationLoader = torch.utils.data.DataLoader(dataset=validation,
-    #  #                                               batch_size=batchSize,
-    #  #                                               shuffle=False)
-
-    # ataques = train[train[:, :, -1] == 1].reshape(6, -1, 19)
-    # numeroAtaques = ataques.shape[1]
-    #
-    # classWeights = torch.tensor([1 / (train.shape[1] - numeroAtaques), 1 / numeroAtaques])
-    # print(classWeights)
-
     classWeights = dataset.weights_clases()
 
     # Crear red
@@ -529,15 +433,66 @@ if entrenar:
                 _, salidas = torch.max(y_validationPred, 1)
                 lossVal += lossFN(y_validationPred, torch.tensor(dataIn[0, :, -1]).long()).item()
                 # print("salida.shape : {} , dataIn.shape: {}".format(y_validationPred.shape, dataIn[0, :, -1].flatten().shape))
-                accuracyVal += accuracy_score(salidas, dataIn[0, :, -1].long())
+                tn, fp, fn, tp = confusion_matrix(dataIn[0, :, -1], salidas, labels=[0, 1]).ravel()
+                accuracyVal += 55 * (tp / (tp + fn)) + 42.5 * (tn / (tn + fp))
+
+                # accuracyVal += accuracy_score(salidas, dataIn[0, :, -1].long())
                 # print("accuracy: {}".format(accuracy_score(salidas, dataIn[0, : , -1].long())))
 
-            print('Epoch [%d/%d], LossValidacion: %.4f Accuracy %.6f' % (epoch, numEpoch, lossVal / (j + 1), accuracyVal / (j + 1)))
+            accuracyVal /= (j+1)
+            print('Epoch [%d/%d], LossValidacion: %.4f Accuracy %.6f' % (epoch, numEpoch, lossVal / (j + 1), accuracyVal))
             # print("j es: {}".format(j))
             lossValidation = np.append(lossValidation, lossVal / (j + 1))
-            accuracy = np.append(accuracy, accuracyVal / (j + 1))
+            accuracy = np.append(accuracy, accuracyVal)
 
-            if (accuracyVal / (j + 1)) > minAccuracy:
-                minAccuracy = accuracyVal / j
+            if accuracyVal > minAccuracy:
+                minAccuracy = accuracyVal
                 torch.save(miLstm, path.join(cwd, "LTSMUnica" + ".pt"))
+
+if predecir:
+    print("Predecir {} archivos...".format(numeroArchivos))
+    variableModeloK = variablesTest.reshape(6, -1, 20)
+    variableModeloK = variableModeloK[:, :, :-1]  # quitamos paciente
+
+    # La variable debe ser multiplo del batchSize
+    batchEntero = variableModeloK.shape[1] // batchSize
+    batchEntero = batchSize * (batchEntero + 1) - variableModeloK.shape[1]
+    complemento = np.ones((6, batchEntero, 19))
+    variableModeloK = np.append(variableModeloK, complemento, axis=1)
+    assert(variableModeloK.shape[1] % batchSize == 0), "El dataset no tiene muestras multiplo de batchSize"
+    print("variableModeloK.shape: {}".format(variableModeloK.shape))
+
+    datasetProduccion = funcionesDataSet.Data3DSet(variableModeloK)
+    diccionario = pickle.load(open(path.join(cwd, "Escalador.pickle"), 'rb'))
+    _ = datasetProduccion.normalizacion(diccionario['SCALER'])
+    # datasetProduccion.split(batchSize, porcentaje_train=1)
+    # entradas = datasetProduccion.dataTrain
+    # print("entradas.shape: {}".format(entradas.shape))
+
+    # cargar la red neuronal
+    miLstm = torch.load(rutaModelo)
+    miLstm.eval()
+    identificadores = []
+    salidasModelo = []
+    for i in range(int(datasetProduccion.__len__(train=False, test=False) / batchSize)):
+        print("\tprediciendo archivo {} a {}".format(i * batchSize, (i + 1) * batchSize), end="")
+        rangoBatch = range(i * batchSize, (i + 1) * batchSize, 1)
+        data = torch.tensor(datasetProduccion.__getitem__(rangoBatch, train=False, test=False))
+        identificador = data[:, :, -1]
+        entradaModelo = Variable(data[:, :, :-1]).float()
+        salidaModelo = miLstm(entradaModelo)
+        identificadores = np.append(identificadores, identificador.to_nu)
+        salidasModelo = np.append(salidasModelo, salidaModelo)
+        print("\t{GREEN]Correcto{END}".format(**formatters))
+
+    print("salidasModelo.shape".format(salidasModelo.shape))
+    print("identificadores.shape".format(identificadores.shape))
+    salidasModelo = salidasModelo[0:numeroArchivos]
+    identificadores = identificadores[0:numeroArchivos]
+    print("salidasModelo.shape".format(salidasModelo.shape))
+    print("identificadores.shape".format(identificadores.shape))
+    # montar el dataframe
+    df = pd.DataFrame(np.append(identificadores, salidasModelo).reshape(-1, 2), columns=["ARCHIVO", "PREDICCION"])
+
+
 
