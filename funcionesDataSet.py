@@ -93,12 +93,13 @@ class Data3DSet(Dataset):
         returns: escalador
         """
         print("Normalizacion")
+        self.data = self.data.reshape(-1, 19)
+        
         if escalador is None:
             self.scaler.fit(self.data[:, :-1])
         else:
             self.scaler = escalador
 
-        self.data = self.data.reshape(-1, 19)
         self.data[:, :-1] = self.scaler.transform(self.data[:, :-1])
         self.data = self.data.reshape(6, -1, 19)
         self.comprobacion(self.data)

@@ -15,14 +15,15 @@ import pandas as pd
 
 # Carga de librerias Pytorch
 import torch
+from torch.autograd import Variable
 from sklearn.metrics import confusion_matrix
 
 # variables globales
 version = 'LSTM Binary Classificator'
 freq = 400
 pathTrain = '/home/diego/Documents/DataChallenge/training/'
-pathTest = '/home/diego/Documents/DataChallenge/testing/'
-pathPrediccion = '/home/diego/Documents/DataChallenge/'
+pathTest = '/home/diego/Documents/DataChallenge/testproc/'
+# pathPrediccion = '/home/diego/Documents/DataChallenge/'
 cwd = getcwd()
 inZ = 4  # 4 lee el modulo, 1 lee eje X
 inX = 1
@@ -105,6 +106,7 @@ if predecir:
                 elif correcto in ('N', 'n'):
                     pathTest = path.abspath(input("Nueva ruta: "))
                     break
+            break
 
 
 # La idea es crear una variable que almacene las muestras en el siguiente formato
@@ -245,7 +247,8 @@ if predecir and not existeVariableTest:
 
     # Por cada archivo leer el contenido del csv
     for indiceArchivo, archivo in enumerate(listaArchivos):
-        print(archivo)
+        # print(archivo)
+        funciones.progress(indiceArchivo, len(listaArchivos), "Analizando archivos")
         # Si no es archivo continuo, evito . y ..
         if not path.isfile(path.join(pathTest, archivo)):
             continue
@@ -323,9 +326,9 @@ if predecir and not existeVariableTest:
                         variableLocal.shape[2] == variablesTest.shape[2])), 'No coinciden los tipos de las matrices'
             variablesTest = np.append(variablesTest, variableLocal, axis=1)
 
-    numeroArchivos = variablesTest.shape[0] / 6
+    numeroArchivos = variablesTest.shape[1]
     print('Variables de Test. Resultado: {}'.format(variablesTest.shape))
-    print('Numero de archivos: {}'.format(variablesTest.shape[0] / 6))
+    print('Numero de archivos: {}'.format(variablesTest.shape[1]))
     print("------------------------------------------------------------")
     # Guardar variables en pickle
     while True:
@@ -333,7 +336,7 @@ if predecir and not existeVariableTest:
         if correcto in ('S', 's'):
             rutaVariablesTest = input("Archivo: Ruta[{}] : ".format(cwd))
             rutaVariablesTest = path.abspath(path.join(getcwd(), rutaVariablesTest))
-            diccionario = {'VARIABLES': variablesTest, 'ARCHIVOS': variablesTest.shape[0] / 6}
+            diccionario = {'VARIABLES': variablesTest, 'ARCHIVOS': variablesTest.shape[1], 'LISTA': listaArchivos}
             pickle.dump(diccionario, open(rutaVariablesTest, "wb"))
             print("Variables guardadas en el archivo: {}".format(rutaVariablesTest))
             break
@@ -344,8 +347,9 @@ if predecir and existeVariableTest:
     diccionario = pickle.load(open(rutaVariablesTest, 'rb'))
     variablesTest = diccionario['VARIABLES']
     numeroArchivos = diccionario['ARCHIVOS']
+    listaArchivos = diccionario['LISTA']
     print("He cargado la variables de train. Resultado: {}".format(variablesTest.shape))
-    print("Numero de archivos:{}".format(variablesTest.shape[0] / 6))
+    print("Numero de archivos:{}".format(numeroArchivos))
     print("------------------------------------------------------------")
 
 if entrenar:
@@ -447,7 +451,8 @@ if entrenar:
 
             if accuracyVal > minAccuracy:
                 minAccuracy = accuracyVal
-                torch.save(miLstm, path.join(cwd, "LTSMUnica" + ".pt"))
+                torch.save(miLstm, path.join(cwd, "LSTMUnica" + ".pt"))
+                print("{GREEN}Modelo guardado{END}".format(**formatters))
 
 if predecir:
     print("Predecir {} archivos...".format(numeroArchivos))
@@ -475,24 +480,18 @@ if predecir:
     identificadores = []
     salidasModelo = []
     for i in range(int(datasetProduccion.__len__(train=False, test=False) / batchSize)):
-        print("\tprediciendo archivo {} a {}".format(i * batchSize, (i + 1) * batchSize), end="")
+        funciones.progress(i, datasetProduccion.__len__(train=False, test=False) / batchSize - 1,"Prediciendo")
         rangoBatch = range(i * batchSize, (i + 1) * batchSize, 1)
         data = torch.tensor(datasetProduccion.__getitem__(rangoBatch, train=False, test=False))
         identificador = data[:, :, -1]
         entradaModelo = Variable(data[:, :, :-1]).float()
         salidaModelo = miLstm(entradaModelo)
-        identificadores = np.append(identificadores, identificador.to_nu)
+        _, salidaModelo = torch.max(salidaModelo, 1)
+        identificadores = np.append(identificadores, identificador[0,:].numpy().astype(int))
         salidasModelo = np.append(salidasModelo, salidaModelo)
-        print("\t{GREEN]Correcto{END}".format(**formatters))
 
-    print("salidasModelo.shape".format(salidasModelo.shape))
-    print("identificadores.shape".format(identificadores.shape))
-    salidasModelo = salidasModelo[0:numeroArchivos]
-    identificadores = identificadores[0:numeroArchivos]
-    print("salidasModelo.shape".format(salidasModelo.shape))
-    print("identificadores.shape".format(identificadores.shape))
-    # montar el dataframe
-    df = pd.DataFrame(np.append(identificadores, salidasModelo).reshape(-1, 2), columns=["ARCHIVO", "PREDICCION"])
-
-
-
+    salidasModelo = salidasModelo[0:int(numeroArchivos)].astype(int)
+    identificadores = identificadores[0:int(numeroArchivos)].astype(int)
+    # montar eldf = pd.concat([pd.DataFrame(listaArchivos, columns=['ARCHIVO']), pd.DataFrame(salidasModelo), columns=['PREDICCION']], ax keys=["ARCHIVO", "PREDICCION"])
+    df = pd.concat([pd.DataFrame(listaArchivos, columns=['ARCHIVO']), pd.DataFrame(salidasModelo, columns=['PREDICCION'])], axis=1)
+    df.to_csv(path.join(cwd, "Resultados.csv"), index=False)
